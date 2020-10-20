@@ -2,7 +2,7 @@
 
 **Due: Monday, November 2, 10:00pm CDT**
 
-In this assignment, you will implement a classic 3D interaction technique that was first introduced in [Virtual Reality on a WIM: Interactive Worlds in Miniature](https://doi.org/10.1145/223904.223938), a widely cited paper from the 1995 CHI conference.  To get started, you should first read this paper to familiarize yourself with how it is supposed to work.  Note that many design and implementation possibilities are discussed in the paper; we are only going to implement a subset of them.
+In this assignment, you will implement a classic 3D interaction technique that was first introduced in [Virtual Reality on a WIM: Interactive Worlds in Miniature](https://canvas.umn.edu/files/15994381/download?download_frd=1), a widely cited paper from the 1995 CHI conference.  To get started, you should first read this paper to familiarize yourself with how it is supposed to work.  Note that many design and implementation possibilities are discussed in the paper; we are only going to implement a subset of them.
 
 ## Submission Information
 
