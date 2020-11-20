@@ -129,8 +129,8 @@ class Game
         var worldTask       = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
         worldTask.onSuccess = (task) => {
             worldTask.loadedMeshes[0].name      = "world";
-            worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 13);
-            worldTask.loadedMeshes[0].scaling   = new Vector3(1.75, 1.75, 1.75);
+            worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 0);
+            worldTask.loadedMeshes[0].scaling   = new Vector3(1.25, 1.25, 1.25);
         }
 
         // This loads all the assets and displays a loading screen
