@@ -1,5 +1,6 @@
-/* CSCI 5619 Assignment 5, Fall 2020
- * Author: Evan Suma Rosenberg
+/* CSCI 5619 Final Project, Fall 2020
+ * Author: Alexander Gullickson
+ * Author: Daniel Shervheim
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
  */
 
