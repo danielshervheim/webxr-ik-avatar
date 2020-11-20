@@ -15,6 +15,7 @@ import { MeshBuilder } from  "@babylonjs/core/Meshes/meshBuilder";
 import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import { Logger } from "@babylonjs/core/Misc/logger";
+import { AssetsManager } from "@babylonjs/core";
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -121,22 +122,35 @@ class Game
         // Default intensity is 1. Let's dim the light a small amount
         light.intensity = 0.7;
 
-        // Our built-in 'sphere' shape.
-        var sphere = MeshBuilder.CreateSphere("sphere", {diameter: 1, segments: 32}, this.scene);
-        sphere.position = new Vector3(-1, 1.6, 2);
+        // The assets manager can be used to load multiple assets
+        var assetsManager = new AssetsManager(this.scene);
 
-        // Use an instanced mesh to efficiently create a copy of an object
-        var sphereCopy = new InstancedMesh("sphereCopy", sphere);
-        sphereCopy.position = new Vector3(1, 1.6, 2)
-        sphereCopy.scaling = new Vector3(1, 2, 1);
+        // Create a task for each asset you want to load
+        var worldTask       = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
+        worldTask.onSuccess = (task) => {
+            worldTask.loadedMeshes[0].name      = "world";
+            worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 13);
+            worldTask.loadedMeshes[0].scaling   = new Vector3(1.75, 1.75, 1.75);
+        }
 
-        // Any modifications to the original Mesh also changes the InstancedMesh
-        var cubeMaterial = new StandardMaterial("blueMaterial", this.scene);
-        cubeMaterial.diffuseColor = new Color3(0, 0, 1);
-        sphere.material = cubeMaterial;
+        // This loads all the assets and displays a loading screen
+        assetsManager.load();
 
-        // Show the debug layer
-        this.scene.debugLayer.show();
+        // This will execute when all assets are loaded
+        assetsManager.onFinish = (tasks) =>
+        {
+            worldTask.loadedMeshes.forEach((mesh) =>
+            {
+                // Disable the walls/ceiling/floor from being selectable
+                // if( mesh.name.startsWith("Floor")) {
+                    // mesh.isPickable = false;
+                    // this.groundMeshes.push(mesh);
+                // }
+            });
+
+            // Show the debug layer
+            this.scene.debugLayer.show();
+        }
     }
 
     // The main update loop will be executed once per frame before the scene is rendered
