@@ -1,7 +1,7 @@
 /* CSCI 5619 Assignment 5, Fall 2020
  * Author: Evan Suma Rosenberg
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
- */ 
+ */
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
@@ -22,27 +22,27 @@ import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector";
 
 
-/******* Start of the Game class ******/ 
-class Game 
-{ 
+/******* Start of the Game class ******/
+class Game
+{
     private canvas: HTMLCanvasElement;
     private engine: Engine;
     private scene: Scene;
 
-    private xrCamera: WebXRCamera | null; 
+    private xrCamera: WebXRCamera | null;
     private leftController: WebXRInputSource | null;
     private rightController: WebXRInputSource | null;
 
     constructor()
     {
-        // Get the canvas element 
+        // Get the canvas element
         this.canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 
         // Generate the BABYLON 3D engine
-        this.engine = new Engine(this.canvas, true); 
+        this.engine = new Engine(this.canvas, true);
 
         // Creates a basic Babylon Scene object
-        this.scene = new Scene(this.engine);   
+        this.scene = new Scene(this.engine);
 
         // Initialize XR member variables to null
         this.xrCamera = null;
@@ -50,25 +50,25 @@ class Game
         this.rightController = null;
     }
 
-    start() : void 
+    start() : void
     {
         // Create the scene and then execute this function afterwards
         this.createScene().then(() => {
 
             // Register a render loop to repeatedly render the scene
-            this.engine.runRenderLoop(() => { 
+            this.engine.runRenderLoop(() => {
                 this.update();
                 this.scene.render();
             });
 
             // Watch for browser/canvas resize events
-            window.addEventListener("resize", () => { 
+            window.addEventListener("resize", () => {
                 this.engine.resize();
             });
         });
     }
 
-    private async createScene() 
+    private async createScene()
     {
         // This creates and positions a first-person camera (non-mesh)
         var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
@@ -92,14 +92,14 @@ class Game
         // Assigns the controllers
         xrHelper.input.onControllerAddedObservable.add((inputSource) =>
         {
-            if(inputSource.uniqueId.endsWith("left")) 
+            if(inputSource.uniqueId.endsWith("left"))
             {
                 this.leftController = inputSource;
             }
-            else 
+            else
             {
                 this.rightController = inputSource;
-            }  
+            }
         });
 
         // Creates a default skybox
@@ -145,7 +145,7 @@ class Game
     }
 
 }
-/******* End of the Game class ******/   
+/******* End of the Game class ******/
 
 // start the game
 var game = new Game();
