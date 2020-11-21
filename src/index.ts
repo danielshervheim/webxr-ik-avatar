@@ -16,6 +16,9 @@ import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { AssetsManager } from "@babylonjs/core";
+import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
+import { Texture } from "@babylonjs/core/Materials/Textures/texture"
+import { Plane } from "@babylonjs/core/Maths/math.plane"
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -122,6 +125,74 @@ class Game
         // Default intensity is 1. Let's dim the light a small amount
         light.intensity = 0.7;
 
+        // Setup 2 Mirrored Surfaces in the scene
+        // Test Object to reflect
+        var redMaterial             = new StandardMaterial("red", this.scene);
+        redMaterial.diffuseColor    = new Color3(1, 0, 0);
+
+        var sphere = MeshBuilder.CreateSphere("Sphere", {}, this.scene);
+        sphere.position = new Vector3( 1, 1.5, -1);//.y = 1.5;
+        sphere.material = redMaterial;
+        var i : number;
+        var mirrorTexture1 : MirrorTexture;
+        var mirrorTexture2 : MirrorTexture;
+        for( i = 0; i < 2; i++)
+        {
+            var glass = MeshBuilder.CreatePlane("glass", {width: 5, height: 5}, this.scene);
+           switch(i)
+            {
+                case 0:
+                    glass.position = new Vector3( -2.49, 1.269, -1.037 );
+                    glass.scaling  = new Vector3( 0.575, 0.5, 0.1 );
+                    glass.rotation = new Vector3( 0, 270 * ( Math.PI / 180 ), 0);
+                    break;
+                case 1:
+                    glass.position = new Vector3( 0.01, 1.055, 2.378 );
+                    glass.scaling  = new Vector3( 0.099, 0.415, 0.002 );
+                    glass.rotation = new Vector3( 5.080 * ( Math.PI / 180 ), 0, 0 );
+                    break;
+            }
+            //Ensure working with new values for glass by computing and obtaining its worldMatrix
+            glass.computeWorldMatrix(true);
+            var glass_worldMatrix = glass.getWorldMatrix();
+
+            //Obtain normals for plane and assign one of them as the normal
+            var glass_vertexData = glass.getVerticesData("normal");
+            var glassNormal      = new Vector3(glass_vertexData![0], glass_vertexData![1], glass_vertexData![2]);
+            //Use worldMatrix to transform normal into its current value
+            glassNormal = Vector3.TransformNormal(glassNormal, glass_worldMatrix)
+
+            //Create reflecting surface for mirror surface
+            var reflector = Plane.FromPositionAndNormal(glass.position, glassNormal.scale(-1));
+
+            var mirror1Material = new StandardMaterial("mirror", this.scene);
+            var mirror2Material = new StandardMaterial("mirror", this.scene);
+            switch(i)
+            {
+                case 0:
+                    Logger.Log("mirror texture 1");
+                    //Create the mirror material
+                    mirrorTexture1                    = new MirrorTexture("mirror1", 1024, this.scene, true);
+                    mirrorTexture1.mirrorPlane        = reflector;
+                    mirrorTexture1.renderList         = [sphere];
+                    mirrorTexture1.level              = 1;
+                    mirror1Material.reflectionTexture = mirrorTexture1;
+                    glass.material                    = mirror1Material;
+                    break;
+                case 1:
+                    Logger.Log("mirror texture 2");
+
+                    //Create the mirror material
+                    mirrorTexture2                    = new MirrorTexture("mirror2", 1024, this.scene, true);
+                    mirrorTexture2.mirrorPlane        = reflector;
+                    mirrorTexture2.renderList         = [sphere];
+                    mirrorTexture2.level              = 1;
+                    mirror2Material.reflectionTexture = mirrorTexture2;
+                    glass.material                    = mirror2Material;
+                    break;
+            }
+        }
+
         // The assets manager can be used to load multiple assets
         var assetsManager = new AssetsManager(this.scene);
 
@@ -139,13 +210,24 @@ class Game
         // This will execute when all assets are loaded
         assetsManager.onFinish = (tasks) =>
         {
+            this.scene.transformNodes.forEach((node) =>
+            {
+                // Remove Asset Lights from the scene which cause mirror surfaces to be overexposed
+                if(node.name.startsWith("Point") || node.name.startsWith("Sun"))
+                {
+                    node.setEnabled(false);
+                }
+            })
             worldTask.loadedMeshes.forEach((mesh) =>
             {
-                // Disable the walls/ceiling/floor from being selectable
-                // if( mesh.name.startsWith("Floor")) {
-                    // mesh.isPickable = false;
-                    // this.groundMeshes.push(mesh);
-                // }
+                // Leave in for now as template if loaded asset file needs manipulating
+                // Note this condition will always evaluate true as there are no point or sun meshes
+                // in the scene
+                if( !(mesh.name.startsWith("Point")) && !(mesh.name.startsWith("Sun") ) )
+                {
+                    mirrorTexture1.renderList!.push(mesh);
+                    mirrorTexture2.renderList!.push(mesh);
+                }
             });
 
             // Show the debug layer
