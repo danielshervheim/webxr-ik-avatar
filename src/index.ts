@@ -126,6 +126,19 @@ class Game
         // Default intensity is 1. Let's dim the light a small amount
         light.intensity = 0.7;
 
+        // The assets manager can be used to load multiple assets
+        var assetsManager = new AssetsManager(this.scene);
+
+        // Create a task for each asset you want to load
+        var avatarTask       = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        avatarTask.onSuccess = (task) => {
+            avatarTask.loadedMeshes[0].name    = "hero";
+            avatarTask.loadedMeshes[0].scaling = new Vector3( 0.1, 0.1, 0.1 );
+        }
+        var mirrorTexture1 : MirrorTexture;
+        var mirrorTexture2 : MirrorTexture;
+        var mirrorTexture3 : MirrorTexture;
+        var mirrorTexture4 : MirrorTexture;
         if( loadStudioScene )
         {
             // Setup 2 Mirrored Surfaces in the scene
@@ -137,8 +150,6 @@ class Game
             sphere.position = new Vector3( 1, 1.5, -1);//.y = 1.5;
             sphere.material = redMaterial;
             var i : number;
-            var mirrorTexture1 : MirrorTexture;
-            var mirrorTexture2 : MirrorTexture;
             for( i = 0; i < 2; i++)
             {
                 var glass = MeshBuilder.CreatePlane("glass", {width: 5, height: 5}, this.scene);
@@ -195,45 +206,12 @@ class Game
                 }
             }
 
-            // The assets manager can be used to load multiple assets
-            var assetsManager = new AssetsManager(this.scene);
-
             // Create a task for each asset you want to load
             var worldTask       = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
             worldTask.onSuccess = (task) => {
                 worldTask.loadedMeshes[0].name      = "world";
                 worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 0);
                 worldTask.loadedMeshes[0].scaling   = new Vector3(1.25, 1.25, 1.25);
-            }
-
-            // This loads all the assets and displays a loading screen
-            assetsManager.load();
-
-            // This will execute when all assets are loaded
-            assetsManager.onFinish = (tasks) =>
-            {
-                this.scene.transformNodes.forEach((node) =>
-                {
-                    // Remove Asset Lights from the scene which cause mirror surfaces to be overexposed
-                    if(node.name.startsWith("Point") || node.name.startsWith("Sun"))
-                    {
-                        node.setEnabled(false);
-                    }
-                })
-                worldTask.loadedMeshes.forEach((mesh) =>
-                {
-                    // Leave in for now as template if loaded asset file needs manipulating
-                    // Note this condition will always evaluate true as there are no point or sun meshes
-                    // in the scene
-                    if( !(mesh.name.startsWith("Point")) && !(mesh.name.startsWith("Sun") ) )
-                    {
-                        mirrorTexture1.renderList!.push(mesh);
-                        mirrorTexture2.renderList!.push(mesh);
-                    }
-                });
-
-                // Show the debug layer
-                this.scene.debugLayer.show();
             }
         }
         else
@@ -291,12 +269,80 @@ class Game
                 //Create the mirror material
                 var mirrorMaterial                   = new StandardMaterial("mirror", this.scene);
                     mirrorMaterial.reflectionTexture = mirrorText;
+                switch(i)
+                {
+                    case 0:
+                        mirrorTexture1 = mirrorText;
+                        break;
+                    case 1:
+                        mirrorTexture2 = mirrorText;
+                        break;
+                    case 2:
+                        mirrorTexture3 = mirrorText;
+                        break;
+                    case 3:
+                        mirrorTexture4 = mirrorText;
+                        break;
 
+                }
                 glass.material = mirrorMaterial;
-
-                // Show the debug layer
-                this.scene.debugLayer.show();
             }
+        }
+        // This loads all the assets and displays a loading screen
+        assetsManager.load();
+
+        // This will execute when all assets are loaded
+        assetsManager.onFinish = (tasks) =>
+        {
+            if( worldTask && loadStudioScene )
+            {
+                this.scene.transformNodes.forEach((node) =>
+                {
+                    // Remove Asset Lights from the scene which cause mirror surfaces to be overexposed
+                    if(node.name.startsWith("Point") || node.name.startsWith("Sun"))
+                    {
+                        node.setEnabled(false);
+                    }
+                })
+                worldTask.loadedMeshes.forEach((mesh) =>
+                {
+                    // Leave in for now as template if loaded asset file needs manipulating
+                    // Note this condition will always evaluate true as there are no point or sun meshes
+                    // in the scene
+                    if( !(mesh.name.startsWith("Point")) && !(mesh.name.startsWith("Sun") ) )
+                    {
+                        mirrorTexture1.renderList!.push(mesh);
+                        mirrorTexture2.renderList!.push(mesh);
+                    }
+                });
+            }
+            // Always hit
+            if( avatarTask )
+            {
+                avatarTask.loadedMeshes.forEach((mesh) =>
+                {
+                    if( loadStudioScene )
+                    {
+                        mirrorTexture1.renderList!.push(mesh);
+                        mirrorTexture2.renderList!.push(mesh);
+                    }
+                    else
+                    {
+                        mirrorTexture1.renderList!.push(mesh);
+                        mirrorTexture2.renderList!.push(mesh);
+                        mirrorTexture3.renderList!.push(mesh);
+                        mirrorTexture4.renderList!.push(mesh);
+                    }
+                });
+                const sambaAnim = this.scene.getAnimationGroupByName("Samba");
+                if( sambaAnim )
+                {
+                    sambaAnim.start(true, 1.0, sambaAnim.from, sambaAnim.to, false);
+                }
+
+            }
+            // Show the debug layer
+            this.scene.debugLayer.show();
         }
     }
 
