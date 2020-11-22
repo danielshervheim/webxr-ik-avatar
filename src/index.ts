@@ -19,6 +19,7 @@ import { AssetsManager } from "@babylonjs/core";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
 import { Texture } from "@babylonjs/core/Materials/Textures/texture"
 import { Plane } from "@babylonjs/core/Maths/math.plane"
+import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllerComponent"
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -28,6 +29,13 @@ import "@babylonjs/inspector";
 
 const loadStudioScene = false;
 
+enum CalibrationMode
+{
+    startCal,
+    armSpan,
+    height,
+    finish
+}
 /******* Start of the Game class ******/
 class Game
 {
@@ -38,6 +46,8 @@ class Game
     private xrCamera: WebXRCamera | null;
     private leftController: WebXRInputSource | null;
     private rightController: WebXRInputSource | null;
+
+    private calibrationMode: CalibrationMode;
 
     constructor()
     {
@@ -54,6 +64,8 @@ class Game
         this.xrCamera = null;
         this.leftController = null;
         this.rightController = null;
+
+        this.calibrationMode = CalibrationMode.finish;
     }
 
     start() : void
@@ -349,9 +361,87 @@ class Game
     // The main update loop will be executed once per frame before the scene is rendered
     private update() : void
     {
-
+        // Polling for controller input
+        this.processControllerInput();
     }
 
+    // Process event handlers for controller input
+    private processControllerInput()
+    {
+        this.onRightA(this.rightController?.motionController?.getComponent("a-button"));
+        this.onRightB(this.rightController?.motionController?.getComponent("b-button"));
+    }
+
+    // Toggle for Avatar Animations in Calibration
+    private onRightA(component?: WebXRControllerComponent)
+    {
+        if(component?.changes.pressed?.current)
+        {
+            if(this.calibrationMode == CalibrationMode.finish)
+            {
+                this.calibrationMode = 0;
+            }
+            else
+            {
+                this.calibrationMode += 1;
+            }
+            switch( this.calibrationMode )
+            {
+                case CalibrationMode.startCal:
+                    // TODO:
+                    // Show Calibration Avatar
+                    // Instruct User to follow Avatar Poses
+                    // Instruct User to press A to continue
+                    // Instruct User to press B to exit at anytime
+                    // Instruct user to use both controllers for correct cal.
+                    // Animate calibration avatar in T-Pose
+                    break;
+
+                case CalibrationMode.armSpan:
+                    // TODO:
+                    // Store Users armspace based on controller distance
+                    // Animate calibration avatar to stand straight up
+                    // Inform User to press A after matching pose
+                    // Maintain press B to exit at anytime
+                    break;
+
+                case CalibrationMode.height:
+                    // TODO:
+                    // Store User height
+                    // Inform User to press A after matching pose
+                    // Maintain press B to exit at anytime
+                    // Calibration avatar either go to next cal pose or finish cal dance
+                    break;
+
+                case CalibrationMode.finish:
+                    // TODO:
+                    // Inform Calibration Complete
+                    // Avatar maybe do a success dance (Spin?)
+                    // Avatar Disappear
+                    break;
+
+                default:
+                    /* Only Reached an error conditions */
+                    this.calibrationMode = CalibrationMode.finish;
+                    break;
+            }
+        }
+    }
+
+    // Toggle to cancel avatar calibrations
+    private onRightB(component?: WebXRControllerComponent)
+    {
+        if(component?.changes.pressed?.current)
+        {
+            if( this.calibrationMode != CalibrationMode.finish )
+            {
+                this.calibrationMode = CalibrationMode.finish;
+                // TODO:
+                // Display Calibration Cancelled prompt
+                // Hide Calibration Avatar
+            }
+        }
+    }
 }
 /******* End of the Game class ******/
 
