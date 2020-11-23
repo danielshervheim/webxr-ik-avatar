@@ -33,6 +33,7 @@ enum CalibrationMode
 {
     startCal,
     armSpan,
+    armBent,
     height,
     finish
 }
@@ -144,8 +145,10 @@ class Game
         // Create a task for each asset you want to load
         var avatarTask       = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
         avatarTask.onSuccess = (task) => {
-            avatarTask.loadedMeshes[0].name    = "hero";
-            avatarTask.loadedMeshes[0].scaling = new Vector3( 0.1, 0.1, 0.1 );
+            avatarTask.loadedMeshes[0].name     = "hero";
+            avatarTask.loadedMeshes[0].scaling  = new Vector3( 0.1, 0.1, 0.1 );
+            avatarTask.loadedMeshes[0].position = new Vector3( 0, 0, 2 );
+            avatarTask.loadedMeshes[0].setEnabled(false);
         }
         var mirrorTexture1 : MirrorTexture;
         var mirrorTexture2 : MirrorTexture;
@@ -346,12 +349,11 @@ class Game
                         mirrorTexture4.renderList!.push(mesh);
                     }
                 });
-                const sambaAnim = this.scene.getAnimationGroupByName("Samba");
-                if( sambaAnim )
-                {
-                    sambaAnim.start(true, 1.0, sambaAnim.from, sambaAnim.to, false);
-                }
-
+                const idleAnim = this.scene.getAnimationGroupByName("Idle");
+                    if( idleAnim )
+                    {
+                        idleAnim.stop();
+                    }
             }
             // Show the debug layer
             this.scene.debugLayer.show();
@@ -375,59 +377,125 @@ class Game
     // Toggle for Avatar Animations in Calibration
     private onRightA(component?: WebXRControllerComponent)
     {
-        if(component?.changes.pressed?.current)
+        var calVatar = this.scene.getMeshByName("hero");
+        if( calVatar )
         {
-            if(this.calibrationMode == CalibrationMode.finish)
+            // Get for later user
+            const idleAnim = this.scene.getAnimationGroupByName("Idle");
+            // Increment calibration to the next step
+            if(component?.changes.pressed?.current)
             {
-                this.calibrationMode = 0;
-            }
-            else
-            {
-                this.calibrationMode += 1;
-            }
-            switch( this.calibrationMode )
-            {
+                if(this.calibrationMode == CalibrationMode.finish)
+                {
+                    this.calibrationMode = 0;
+                }
+                else
+                {
+                    this.calibrationMode += 1;
+                }
+
+                switch( this.calibrationMode )
+                {
+
                 case CalibrationMode.startCal:
                     // TODO:
                     // Show Calibration Avatar
-                    // Instruct User to follow Avatar Poses
+                    calVatar.setEnabled(true);
+
+                    // Initial Animation of Calibration Avatar Vibing
+                    //  waiting for calibration to begin
+                    if( idleAnim )
+                    {
+                        idleAnim.start(false, 1.0, idleAnim.from, idleAnim.to, true);
+                    }
+                    // Instruct User to follow the avatar's poses
                     // Instruct User to press A to continue
                     // Instruct User to press B to exit at anytime
                     // Instruct user to use both controllers for correct cal.
-                    // Animate calibration avatar in T-Pose
                     break;
 
                 case CalibrationMode.armSpan:
+                    // Animate Character to first pose
+                    // Just used a default animation for now this will need to be changed to the T-Pose
+                    // when it is made in Mixamo
+                    if( idleAnim )
+                    {
+                        idleAnim.stop();
+                    }
+                    const walkAnim = this.scene.getAnimationGroupByName("Walking");
+                    if( walkAnim )
+                    {
+                        walkAnim.start(false, 1.0, walkAnim.from, walkAnim.to, true);
+                    }
+
                     // TODO:
+                    // Change animation from walking to T-pose
                     // Store Users armspace based on controller distance
-                    // Animate calibration avatar to stand straight up
-                    // Inform User to press A after matching pose
-                    // Maintain press B to exit at anytime
+                    // Inform User to press A after matching pose or press B to cancel calibration
+                    // Display on top of calVatar ( T-Pose 1/3 )
+
+                    break;
+
+                case CalibrationMode.armBent:
+                    // TODO:
+                    // Store users armspan based on controller distance apart
+
+                    // Update Calibration avatar to the next pose (arms bent at 90 deg upward)
+                    // Need to change this animation from samba to ^^^^
+                    if( idleAnim )
+                    {
+                        idleAnim.stop();
+                    }
+                    const sambaAnim = this.scene.getAnimationGroupByName("Samba");
+                    if( sambaAnim )
+                    {
+                        sambaAnim.start(false, 1.0, sambaAnim.from, sambaAnim.to, true);
+                    }
+                    // TODO:
+                    // Inform User to press A after matching pose or press be to cancel (below calVatar)
+                    // Display bend arms to 90 degrees 2/3 above calVatar
+
                     break;
 
                 case CalibrationMode.height:
                     // TODO:
-                    // Store User height
-                    // Inform User to press A after matching pose
-                    // Maintain press B to exit at anytime
-                    // Calibration avatar either go to next cal pose or finish cal dance
+                    // Store arm bone lengths from prev pose
+
+                    // Animate Avatar to standing upright with arms at its side
+                    // Need to change this animation to above description
+                    if( idleAnim )
+                    {
+                        idleAnim.stop();
+                    }
+                    const walkBackAnim = this.scene.getAnimationGroupByName("WalkingBack");
+                    if( walkBackAnim )
+                    {
+                        walkBackAnim.start(false, 1.0, walkBackAnim.from, walkBackAnim.to, true);
+                    }
+
+                    // TODO:
+                    // Inform User to press A after matching pose or press b to cancel (below calVatar)
+                    // Display Stand upright with arm at hips 3/3 above calVatar
                     break;
 
                 case CalibrationMode.finish:
                     // TODO:
+                    // Record Users height/(possibly hip height)
                     // Inform Calibration Complete
-                    // Avatar maybe do a success dance (Spin?)
-                    // Avatar Disappear
+                    // Possibly animation complete dance by calVatar
+                    // Hide calVatar
+                    calVatar.setEnabled(false);
                     break;
 
                 default:
                     /* Only Reached an error conditions */
                     this.calibrationMode = CalibrationMode.finish;
+                    calVatar.setEnabled(false);
                     break;
+                }
             }
         }
     }
-
     // Toggle to cancel avatar calibrations
     private onRightB(component?: WebXRControllerComponent)
     {
@@ -439,6 +507,11 @@ class Game
                 // TODO:
                 // Display Calibration Cancelled prompt
                 // Hide Calibration Avatar
+                var calVatar = this.scene.getMeshByName("hero");
+                if( calVatar )
+                {
+                    calVatar.setEnabled(false);
+                }
             }
         }
     }
