@@ -37,6 +37,22 @@ enum CalibrationMode
     height,
     finish
 }
+
+enum AvatarMeasurements
+{
+    leftArm,
+    leftWrist2Elbow,
+    leftElbow2Shoulder,
+
+    rightArm,
+    rightWrist2Elbow,
+    rightElbow2Shoulder,
+
+    height,
+    hipHeight,
+    AvatarMeasurementsCount
+}
+
 /******* Start of the Game class ******/
 class Game
 {
@@ -50,6 +66,7 @@ class Game
 
     private calibrationMode: CalibrationMode;
 
+    private avatarMeasurements: Array<number>;
     constructor()
     {
         // Get the canvas element
@@ -67,6 +84,15 @@ class Game
         this.rightController = null;
 
         this.calibrationMode = CalibrationMode.finish;
+        this.avatarMeasurements = [
+            AvatarMeasurements.leftArm,
+            AvatarMeasurements.leftWrist2Elbow,
+            AvatarMeasurements.leftElbow2Shoulder,
+            AvatarMeasurements.rightArm,
+            AvatarMeasurements.rightWrist2Elbow,
+            AvatarMeasurements.rightElbow2Shoulder,
+            AvatarMeasurements.height,
+            AvatarMeasurements.hipHeight]; //Index into based on the Avatar Measurement enum
     }
 
     start() : void
@@ -150,6 +176,11 @@ class Game
             avatarTask.loadedMeshes[0].position = new Vector3( 0, 0, 2 );
             avatarTask.loadedMeshes[0].setEnabled(false);
         }
+
+        // Setup a default calibration for the user limb lengths
+        this.defaultCal( camera.position.y, camera.position.y);
+
+        // Setup Mirror Textures
         var mirrorTexture1 : MirrorTexture;
         var mirrorTexture2 : MirrorTexture;
         var mirrorTexture3 : MirrorTexture;
@@ -430,7 +461,6 @@ class Game
 
                     // TODO:
                     // Change animation from walking to T-pose
-                    // Store Users armspace based on controller distance
                     // Inform User to press A after matching pose or press B to cancel calibration
                     // Display on top of calVatar ( T-Pose 1/3 )
 
@@ -439,7 +469,7 @@ class Game
                 case CalibrationMode.armBent:
                     // TODO:
                     // Store users armspan based on controller distance apart
-
+                    this.recordArmSpan();
                     // Update Calibration avatar to the next pose (arms bent at 90 deg upward)
                     // Need to change this animation from samba to ^^^^
                     if( idleAnim )
@@ -460,7 +490,7 @@ class Game
                 case CalibrationMode.height:
                     // TODO:
                     // Store arm bone lengths from prev pose
-
+                    this.recordArmBones();
                     // Animate Avatar to standing upright with arms at its side
                     // Need to change this animation to above description
                     if( idleAnim )
@@ -481,6 +511,7 @@ class Game
                 case CalibrationMode.finish:
                     // TODO:
                     // Record Users height/(possibly hip height)
+                    this.recordHeight();
                     // Inform Calibration Complete
                     // Possibly animation complete dance by calVatar
                     // Hide calVatar
@@ -513,6 +544,60 @@ class Game
                     calVatar.setEnabled(false);
                 }
             }
+        }
+    }
+    private defaultCal( height: number, armSpan: number)
+    {
+        var arm            = (armSpan / 2);
+        var wrist2Elbow    = (arm / 2);
+        var elbow2Shoulder = (arm / 2);
+        var hipHeight      = (height / 2);
+
+        this.avatarMeasurements[AvatarMeasurements.leftArm]              = arm;
+        this.avatarMeasurements[AvatarMeasurements.leftWrist2Elbow ]     = wrist2Elbow;
+        this.avatarMeasurements[AvatarMeasurements.leftElbow2Shoulder ]  = elbow2Shoulder;
+        this.avatarMeasurements[AvatarMeasurements.rightArm]             = arm;
+        this.avatarMeasurements[AvatarMeasurements.rightWrist2Elbow ]    = wrist2Elbow;
+        this.avatarMeasurements[AvatarMeasurements.rightElbow2Shoulder ] = elbow2Shoulder;
+        this.avatarMeasurements[AvatarMeasurements.height ]              = height;
+        this.avatarMeasurements[AvatarMeasurements.hipHeight ]           = hipHeight;
+    }
+    private recordArmSpan()
+    {
+        var armSpan   = 0;
+        var armLength = 0;
+        if( this.rightController?.grip && this.leftController?.grip)
+        {
+            // This equation could be made more sophisticated by using the headset position and pythagorean theorem
+            // if this current calculation is not accurate enough.
+            armSpan   = Vector3.Distance(this.rightController.grip?.position, this.leftController.grip?.position);
+            armLength = (armSpan / 2);
+            this.avatarMeasurements[AvatarMeasurements.leftArm]  = armLength;
+            this.avatarMeasurements[AvatarMeasurements.rightArm] = armLength;
+        }
+    }
+    private recordArmBones()
+    {
+        var elbow2ShoulderLength = 0;
+        var wrist2ElbowLength    = 0;
+        if( this.rightController?.grip && this.leftController?.grip )
+        {
+            var halfArmSpan = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
+            elbow2ShoulderLength = (halfArmSpan / 2);
+            wrist2ElbowLength    = (this.avatarMeasurements[AvatarMeasurements.rightArm] - elbow2ShoulderLength);
+
+            this.avatarMeasurements[AvatarMeasurements.leftElbow2Shoulder]  = elbow2ShoulderLength;
+            this.avatarMeasurements[AvatarMeasurements.rightElbow2Shoulder] = elbow2ShoulderLength;
+            this.avatarMeasurements[AvatarMeasurements.leftWrist2Elbow]     = wrist2ElbowLength;
+            this.avatarMeasurements[AvatarMeasurements.rightWrist2Elbow]    = wrist2ElbowLength;
+        }
+    }
+    private recordHeight()
+    {
+        if( this.xrCamera?.realWorldHeight)
+        {
+            this.avatarMeasurements[AvatarMeasurements.height]    = this.xrCamera.realWorldHeight;
+            this.avatarMeasurements[AvatarMeasurements.hipHeight] = (this.xrCamera.realWorldHeight / 2);
         }
     }
 }
