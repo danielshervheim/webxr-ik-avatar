@@ -20,6 +20,8 @@ import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
 import { Texture } from "@babylonjs/core/Materials/Textures/texture"
 import { Plane } from "@babylonjs/core/Maths/math.plane"
 import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllerComponent"
+import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture"
+import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -35,7 +37,8 @@ enum CalibrationMode
     armSpan,
     armBent,
     height,
-    finish
+    finish,
+    hide
 }
 
 enum AvatarMeasurements
@@ -67,6 +70,8 @@ class Game
     private calibrationMode: CalibrationMode;
 
     private avatarMeasurements: Array<number>;
+    private staticText: TextBlock;
+
     constructor()
     {
         // Get the canvas element
@@ -83,8 +88,8 @@ class Game
         this.leftController = null;
         this.rightController = null;
 
-        this.calibrationMode = CalibrationMode.finish;
-        this.avatarMeasurements = [
+        this.calibrationMode = CalibrationMode.hide;
+        this.avatarMeasurements = [     //Index into based on the Avatar Measurement enum
             AvatarMeasurements.leftArm,
             AvatarMeasurements.leftWrist2Elbow,
             AvatarMeasurements.leftElbow2Shoulder,
@@ -92,7 +97,9 @@ class Game
             AvatarMeasurements.rightWrist2Elbow,
             AvatarMeasurements.rightElbow2Shoulder,
             AvatarMeasurements.height,
-            AvatarMeasurements.hipHeight]; //Index into based on the Avatar Measurement enum
+            AvatarMeasurements.hipHeight];
+
+        this.staticText = new TextBlock();
     }
 
     start() : void
@@ -385,6 +392,28 @@ class Game
                     {
                         idleAnim.stop();
                     }
+
+                // Setup Calibration Text with this avatar
+                // Create a plane for a text block
+                var staticTextPlane            = MeshBuilder.CreatePlane("textPlane", {width: 15, height: 5}, this.scene);
+                    staticTextPlane.position   = new Vector3(0, 27, 0);
+                    staticTextPlane.rotation   = new Vector3(0, Math.PI, 0);
+                    staticTextPlane.isPickable = false;
+                    staticTextPlane.parent     = avatarTask.loadedMeshes[0];
+
+                // Create a dynamic texture for the text block
+                var staticTextTexture            = AdvancedDynamicTexture.CreateForMesh(staticTextPlane, 1500, 500);
+                    staticTextTexture.background = "#E3E0F1";
+
+                // Create a static text block
+                this.staticText                         = new TextBlock();
+                this.staticText.text                    = "Follow These Prompts";
+                this.staticText.color                   = "black";
+                this.staticText.fontSize                = 62;
+                this.staticText.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
+                this.staticText.textVerticalAlignment   = TextBlock.VERTICAL_ALIGNMENT_TOP;
+
+                staticTextTexture.addControl(this.staticText);
             }
             // Show the debug layer
             this.scene.debugLayer.show();
@@ -416,7 +445,7 @@ class Game
             // Increment calibration to the next step
             if(component?.changes.pressed?.current)
             {
-                if(this.calibrationMode == CalibrationMode.finish)
+                if(this.calibrationMode == CalibrationMode.hide)
                 {
                     this.calibrationMode = 0;
                 }
@@ -429,7 +458,6 @@ class Game
                 {
 
                 case CalibrationMode.startCal:
-                    // TODO:
                     // Show Calibration Avatar
                     calVatar.setEnabled(true);
 
@@ -443,6 +471,13 @@ class Game
                     // Instruct User to press A to continue
                     // Instruct User to press B to exit at anytime
                     // Instruct user to use both controllers for correct cal.
+                    this.staticText.fontSize = 62;
+                    this.staticText.text     = "Calibration Process Initiated:\n" +
+                    "I will walk you through the process, just match my\n" +
+                    "poses. When the poses are similiar, press the\n" +
+                    "a-button to go to the next pose. Press the b-button\n" +
+                    "to cancel the calibration process\n" +
+                    "When you are ready to start, press the a-button.";
                     break;
 
                 case CalibrationMode.armSpan:
@@ -453,44 +488,45 @@ class Game
                     {
                         idleAnim.stop();
                     }
+                    // TODO:
+                    // Change animation from walking to T-pose
                     const walkAnim = this.scene.getAnimationGroupByName("Walking");
                     if( walkAnim )
                     {
                         walkAnim.start(false, 1.0, walkAnim.from, walkAnim.to, true);
                     }
 
-                    // TODO:
-                    // Change animation from walking to T-pose
                     // Inform User to press A after matching pose or press B to cancel calibration
                     // Display on top of calVatar ( T-Pose 1/3 )
-
+                    this.staticText.fontSize = 124;
+                    this.staticText.text     = "T-Pose (1/3)\n Press a when you have\n matched my pose.";
                     break;
 
                 case CalibrationMode.armBent:
-                    // TODO:
                     // Store users armspan based on controller distance apart
                     this.recordArmSpan();
-                    // Update Calibration avatar to the next pose (arms bent at 90 deg upward)
-                    // Need to change this animation from samba to ^^^^
+
+                    // Stop idle animation if it was still going
                     if( idleAnim )
                     {
                         idleAnim.stop();
                     }
+                    // Update Calibration avatar to the next pose (arms bent at 90 deg upward)
+                    // Need to change this animation from samba to ^^^^
                     const sambaAnim = this.scene.getAnimationGroupByName("Samba");
                     if( sambaAnim )
                     {
                         sambaAnim.start(false, 1.0, sambaAnim.from, sambaAnim.to, true);
                     }
-                    // TODO:
-                    // Inform User to press A after matching pose or press be to cancel (below calVatar)
-                    // Display bend arms to 90 degrees 2/3 above calVatar
 
+                    // Inform User to press A after matching pose or press be to cancel (below calVatar)
+                    this.staticText.text = "Bent Arms (2/3)\n Press a when you have\n matched my pose.";
                     break;
 
                 case CalibrationMode.height:
-                    // TODO:
                     // Store arm bone lengths from prev pose
                     this.recordArmBones();
+
                     // Animate Avatar to standing upright with arms at its side
                     // Need to change this animation to above description
                     if( idleAnim )
@@ -503,24 +539,32 @@ class Game
                         walkBackAnim.start(false, 1.0, walkBackAnim.from, walkBackAnim.to, true);
                     }
 
-                    // TODO:
-                    // Inform User to press A after matching pose or press b to cancel (below calVatar)
-                    // Display Stand upright with arm at hips 3/3 above calVatar
+                    // Inform User to press A after matching pose or press b to cancel
+                    this.staticText.text = "User Height (3/3)\n Press a when you have\n matched my pose.";
                     break;
 
                 case CalibrationMode.finish:
-                    // TODO:
                     // Record Users height/(possibly hip height)
                     this.recordHeight();
+
                     // Inform Calibration Complete
+                    this.staticText.text = "Calibration completed\nsuccesfully.\n Press a to escape."
                     // Possibly animation complete dance by calVatar
+                    const completeAnim = this.scene.getAnimationGroupByName("Samba")
+                    if( completeAnim )
+                    {
+                        completeAnim.start(false, 1.3, completeAnim.from, completeAnim.to, true);
+                    }
+                    break;
+
+                case CalibrationMode.hide:
                     // Hide calVatar
                     calVatar.setEnabled(false);
                     break;
 
                 default:
                     /* Only Reached an error conditions */
-                    this.calibrationMode = CalibrationMode.finish;
+                    this.calibrationMode = CalibrationMode.hide;
                     calVatar.setEnabled(false);
                     break;
                 }
@@ -532,11 +576,9 @@ class Game
     {
         if(component?.changes.pressed?.current)
         {
-            if( this.calibrationMode != CalibrationMode.finish )
+            if( this.calibrationMode != CalibrationMode.hide )
             {
-                this.calibrationMode = CalibrationMode.finish;
-                // TODO:
-                // Display Calibration Cancelled prompt
+                this.calibrationMode = CalibrationMode.hide;
                 // Hide Calibration Avatar
                 var calVatar = this.scene.getMeshByName("hero");
                 if( calVatar )
