@@ -596,7 +596,7 @@ class Game
                     {
                         idleAnim.stop();
                     }
-                    // Update Calibration avatar to the next pose (arms bent at 90 deg upward)
+                    // Update Calibration avatar to the next pose (Hands on shoulders)
                     // Need to change this animation from samba to ^^^^
                     const sambaAnim = this.scene.getAnimationGroupByName("Samba");
                     if( sambaAnim )
@@ -709,9 +709,15 @@ class Game
         var wrist2ElbowLength    = 0;
         if( this.rightController?.grip && this.leftController?.grip )
         {
-            var halfArmSpan = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
-            elbow2ShoulderLength = (halfArmSpan / 2);
-            wrist2ElbowLength    = (this.avatarMeasurements[AvatarMeasurements.rightArm] - elbow2ShoulderLength);
+            var torsoWidth = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
+
+            // Update Arm Lengths to Account for Torso Width
+            this.avatarMeasurements[AvatarMeasurements.rightArm] -= ( torsoWidth / 2 );
+            this.avatarMeasurements[AvatarMeasurements.leftArm] -= ( torsoWidth / 2 );
+
+            // Assume User Arm Proportions are the standard proportions (shoulder2Elbow 45%, elbow2Wrist 55%)
+            elbow2ShoulderLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.55) );
+            wrist2ElbowLength    = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.45) );
 
             this.avatarMeasurements[AvatarMeasurements.leftElbow2Shoulder]  = elbow2ShoulderLength;
             this.avatarMeasurements[AvatarMeasurements.rightElbow2Shoulder] = elbow2ShoulderLength;
