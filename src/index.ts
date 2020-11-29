@@ -15,13 +15,15 @@ import { MeshBuilder } from  "@babylonjs/core/Meshes/meshBuilder";
 import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import { Logger } from "@babylonjs/core/Misc/logger";
-import { AssetsManager } from "@babylonjs/core";
+import { AssetsManager, BoneAxesViewer, DebugLayer } from "@babylonjs/core";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
 import { Texture } from "@babylonjs/core/Materials/Textures/texture"
 import { Plane } from "@babylonjs/core/Maths/math.plane"
 import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllerComponent"
 import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture"
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
+import { BoneIKController } from "@babylonjs/core/Bones/boneIKController"
+import { Mesh } from "@babylonjs/core/Meshes/mesh"
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -71,6 +73,8 @@ class Game
 
     private avatarMeasurements: Array<number>;
     private staticText: TextBlock;
+    private targetRight: Mesh;
+    private targetLeft: Mesh;
 
     constructor()
     {
@@ -100,6 +104,9 @@ class Game
             AvatarMeasurements.hipHeight];
 
         this.staticText = new TextBlock();
+
+        this.targetRight = MeshBuilder.CreateSphere("Right Target", { diameter: 0.1 }, this.scene);
+        this.targetLeft  = MeshBuilder.CreateSphere("Left Target",  { diameter: 0.1 }, this.scene);
     }
 
     start() : void
@@ -147,10 +154,34 @@ class Game
             if(inputSource.uniqueId.endsWith("left"))
             {
                 this.leftController = inputSource;
+                if( inputSource.grip != null )
+                {
+                    this.targetLeft.parent = inputSource.grip;
+                    this.targetLeft.setEnabled(false);
+                }
             }
             else
             {
                 this.rightController = inputSource;
+                if( inputSource.grip != null )
+                {
+                    this.targetRight.parent = inputSource.grip;
+                    this.targetRight.setEnabled(false);
+                }
+            }
+        });
+
+        xrHelper.input.onControllerRemovedObservable.add((inputSource) =>
+        {
+            if(inputSource.uniqueId.endsWith("left"))
+            {
+                this.targetLeft.parent = null;
+                this.targetLeft.setEnabled(true);
+            }
+            else
+            {
+                this.targetRight.parent = null;
+                this.targetRight.setEnabled(true);
             }
         });
 
@@ -185,12 +216,38 @@ class Game
         }
 
         // Create a task for each asset you want to load
+        var poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 2.5}, this.scene);
+
         var userTask       = assetsManager.addMeshTask( "user task", "", "assets/dude.babylon", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
         userTask.onSuccess = (task) => {
             userTask.loadedMeshes[0].name     = "user";
             userTask.loadedMeshes[0].scaling  = new Vector3( 0.025, 0.025, 0.025 );
             userTask.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
-            // userTask.loadedMeshes[0].setEnabled(false);
+
+            var mesh     = userTask.loadedMeshes[0];
+            var skeleton = userTask.loadedSkeletons[0];
+
+            var t = 0;
+
+            poleTarget.position.x = 0;
+            poleTarget.position.y = 100;
+            poleTarget.position.z = -50;
+
+            poleTarget.parent  = mesh;
+
+            var ikCtlRight = new BoneIKController(mesh, skeleton.bones[14], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+            var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[33], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+
+            ikCtlRight.maxAngle = Math.PI * .9;
+            ikCtlLeft.maxAngle  = Math.PI * .9;
+
+            // BoneAxesViewer can show axes of each bone when enablesd
+            // var bone1AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[14], mesh);
+            // var bone2AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[13], mesh);
+            this.scene.registerBeforeRender(function () {
+                ikCtlRight.update();
+                ikCtlLeft.update();
+            });
         }
 
         // Setup a default calibration for the user limb lengths
