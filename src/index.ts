@@ -184,6 +184,15 @@ class Game
             avatarTask.loadedMeshes[0].setEnabled(false);
         }
 
+        // Create a task for each asset you want to load
+        var userTask       = assetsManager.addMeshTask( "user task", "", "assets/dude.babylon", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        userTask.onSuccess = (task) => {
+            userTask.loadedMeshes[0].name     = "user";
+            userTask.loadedMeshes[0].scaling  = new Vector3( 0.025, 0.025, 0.025 );
+            userTask.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
+            // userTask.loadedMeshes[0].setEnabled(false);
+        }
+
         // Setup a default calibration for the user limb lengths
         this.defaultCal( camera.position.y, camera.position.y);
 
@@ -317,8 +326,9 @@ class Game
                 //Create MirrorTexture
                 var mirrorText             = new MirrorTexture("mirror", 1024, this.scene, true);
                     mirrorText.mirrorPlane = reflector;
-                    mirrorText.renderList  = [sphere];
                     mirrorText.level       = 1;
+                    mirrorText.renderList  = [sphere, ground];
+
                 //Create the mirror material
                 var mirrorMaterial                   = new StandardMaterial("mirror", this.scene);
                     mirrorMaterial.reflectionTexture = mirrorText;
@@ -370,6 +380,24 @@ class Game
                 });
             }
             // Always hit
+            if( userTask )
+            {
+                userTask.loadedMeshes.forEach((mesh) =>
+                {
+                    if( loadStudioScene )
+                    {
+                        mirrorTexture1.renderList!.push(mesh);
+                        mirrorTexture2.renderList!.push(mesh);
+                    }
+                    else
+                    {
+                        mirrorTexture1.renderList!.push(mesh);
+                        mirrorTexture2.renderList!.push(mesh);
+                        mirrorTexture3.renderList!.push(mesh);
+                        mirrorTexture4.renderList!.push(mesh);
+                    }
+                });
+            }
             if( avatarTask )
             {
                 avatarTask.loadedMeshes.forEach((mesh) =>
