@@ -8,7 +8,7 @@ In this assignment, you will implement a classic 3D interaction technique that w
 
 You should fill out this information before submitting your assignment.  Make sure to document the name and source of any third party assets such as 3D models, textures, or any other content used that was not solely written by you.  Include sufficient detail for the instructor or TA to easily find them, such as asset store or download links.
 
-Name: 
+Name:
 
 UMN Email:
 
@@ -63,7 +63,7 @@ You will need to check out and submit the project through GitHub classroom.  The
 
 Please test that your submission meets these requirements.  For example, after you check in your final version of the assignment to GitHub, check it out again to a new directory and make sure everything builds and runs correctly.
 
-## Local Development 
+## Local Development
 
 After checking out the project, you need to initialize by pulling the dependencies with:
 
@@ -89,7 +89,7 @@ After you have finished the assignment, you can build a distribution version of 
 npm run build
 ```
 
-Make sure to include your assets in the `dist` directory.  The debug layer should be disabled in your final build.  Upload it to your public `.www` directory, and make sure to set the permissions so that it loads correctly in a web browser.  You should include this URL in submission information section of your `README.md` file. 
+Make sure to include your assets in the `dist` directory.  The debug layer should be disabled in your final build.  Upload it to your public `.www` directory, and make sure to set the permissions so that it loads correctly in a web browser.  You should include this URL in submission information section of your `README.md` file.
 
 This project also includes a `deploy.sh` script that can automate the process of copying your assets to the `dist` directory, deploying your build to the web server, and setting public permissions.  To use the script, you will need to use a Unix shell and have`rsync` installed.  If you are running Windows 10, then you can use the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).  Note that you will need to fill in the missing values in the script before it will work.
 
@@ -102,6 +102,3 @@ The intent of choosing CC BY-NC-SA 4.0 is to allow individuals and instructors a
 ## Acknowledgments
 
 This assignment was partially based upon content from the [3D User Interfaces Fall 2020](https://github.blairmacintyre.me/3dui-class-f20) course by Blair MacIntyre.
-
-
-
