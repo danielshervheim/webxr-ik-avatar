@@ -6,7 +6,7 @@
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
-import { Vector3, Color3 } from "@babylonjs/core/Maths/math";
+import { Vector3, Color3, Quaternion, Angle, Space } from "@babylonjs/core/Maths/math";
 import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
 import { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
@@ -15,7 +15,7 @@ import { MeshBuilder } from  "@babylonjs/core/Meshes/meshBuilder";
 import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import { Logger } from "@babylonjs/core/Misc/logger";
-import { AssetsManager, BoneAxesViewer, DebugLayer } from "@babylonjs/core";
+import { AssetsManager, BoneAxesViewer, DebugLayer, SmartArray } from "@babylonjs/core";
 import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
 import { Texture } from "@babylonjs/core/Materials/Textures/texture"
 import { Plane } from "@babylonjs/core/Maths/math.plane"
@@ -25,6 +25,7 @@ import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
 import { BoneIKController } from "@babylonjs/core/Bones/boneIKController"
 import { Mesh } from "@babylonjs/core/Meshes/mesh"
 import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial"
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -79,6 +80,18 @@ class Game
 
     private lightmapDictionary : { [id: string] : Array<string>; } = {};
     private lightmapTextures : { [id: string] : Texture | null } = {};
+    // Head/Hands position and orientaiton caches
+    private hp : SmartArray<Vector3>;
+    private lhp: SmartArray<Vector3>;
+    private rhp: SmartArray<Vector3>;
+    private ho : SmartArray<Vector3>;
+    private cacheCounter: number;
+
+    private fV      : Vector3;
+    private fP      : Vector3;
+    private bfActual: Vector3;
+
+    private poleTargetTrans: TransformNode;
 
     constructor()
     {
@@ -142,7 +155,6 @@ class Game
             "tv_frame",
         ];
 
-
         this.lightmapDictionary["walls_lightmap.jpeg"] = [
             "floor_lamp_gray",
             "ceiling",
@@ -164,6 +176,26 @@ class Game
             "table",
             "tv_screen",
         ];
+
+
+        this.hp  = new SmartArray( 50 );
+        this.lhp = new SmartArray( 50 );
+        this.rhp = new SmartArray( 50 );
+        this.ho  = new SmartArray( 50 );
+        for( var i = 0; i <  50; i++)
+        {
+            this.ho.push(Vector3.Zero());
+            this.hp.push(Vector3.Zero());
+            this.lhp.push(Vector3.Zero());
+            this.rhp.push(Vector3.Zero());
+        }
+
+        this.cacheCounter = 0;
+
+        this.fV       = Vector3.Zero();
+        this.fP       = Vector3.Zero();
+        this.bfActual = Vector3.Zero();
+        this.poleTargetTrans = new TransformNode("pole Target Tran", this.scene );
     }
 
     start() : void
@@ -284,13 +316,11 @@ class Game
             var mesh     = userTask.loadedMeshes[0];
             var skeleton = userTask.loadedSkeletons[0];
 
-            var t = 0;
-
-            poleTarget.position.x = 0;
-            poleTarget.position.y = 100;
-            poleTarget.position.z = -50;
-
-            poleTarget.parent  = mesh;
+            poleTarget.position.x       = 0;
+            poleTarget.position.y       = 100;
+            poleTarget.position.z       = -50;
+            this.poleTargetTrans.parent = mesh;
+            poleTarget.parent           = this.poleTargetTrans;
 
             var ikCtlRight = new BoneIKController(mesh, skeleton.bones[14], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
             var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[33], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
@@ -305,6 +335,8 @@ class Game
                 ikCtlRight.update();
                 ikCtlLeft.update();
             });
+
+            userTask.loadedMeshes[0].rotation = this.bfActual;
         }
 
         // Load in the lightmaps.
@@ -607,6 +639,10 @@ class Game
     {
         // Polling for controller input
         this.processControllerInput();
+
+        // Polling for user forward direction
+        this.processUserForward();
+
     }
 
     // Process event handlers for controller input
@@ -770,6 +806,174 @@ class Game
             }
         }
     }
+
+    // Useful function to compare two vectors based on cordinates
+    // Cleaner Way of writing the Vector3.Distance function
+    private vectorCompare( v1: Vector3, v2: Vector3, dev: number ) : boolean
+    {
+        return ( Vector3.Distance( v1, v2) < dev )
+    }
+
+    // Process Users forward direction and rotate if necessary
+    private processUserForward()
+    {
+        // Only process if headset and controllers are in the scene
+        if( this.xrCamera && this.rightController && this.leftController && ( this.cacheCounter < 50 )  )
+        {
+            // Algorithm adapted from Real-time Full-body Motion Reconstruction and Recognition for Off-the-Shelf VR Devices
+            // Section 4.3
+
+            // Update Cache of users head and hand positions and orientaitons
+            // Get HeadSet forward Direction
+            var hf   = this.xrCamera.rotationQuaternion.toEulerAngles();
+                hf.x = 0;
+                hf.z = 0;
+
+            // Get Headset position
+            var hp = this.xrCamera.position;
+
+            // Get Controllers' Position
+            var lhp = this.leftController.pointer.position;
+            var rhp = this.rightController.pointer.position;
+            var down  = new Vector3( 0, -1, 0 ); // this is down Babylon be lefty
+
+            this.ho.data [this.cacheCounter] = hf;
+            this.hp.data [this.cacheCounter] = hp;
+            this.lhp.data[this.cacheCounter] = lhp;
+            this.rhp.data[this.cacheCounter] = rhp;
+
+            this.cacheCounter = ( ( this.cacheCounter + 1 ) % 50 );
+            // Iterate over cache for last 50 frames and determine the average
+            var hoAvg  = Vector3.Zero();
+            var hpAvg  = Vector3.Zero();
+            var lhpAvg = Vector3.Zero();
+            var rhpAvg = Vector3.Zero();
+            for( var i = 0; i < this.ho.length; i++ )
+            {
+                hoAvg.addInPlace(this.ho.data[i]);
+                hpAvg.addInPlace(this.hp.data[i]);
+                lhpAvg.addInPlace(this.lhp.data[i]);
+                rhpAvg.addInPlace(this.rhp.data[i]);
+            }
+            hoAvg.scaleInPlace( 1 / this.ho.length );
+            hpAvg.scaleInPlace( 1 / this.hp.length );
+            lhpAvg.scaleInPlace( 1 / this.lhp.length );
+            rhpAvg.scaleInPlace( 1 / this.rhp.length );
+
+            var headsetStable = false;
+            var controlStable = false;
+
+            var stabThresh = 0.5;
+            if( this.vectorCompare( hoAvg, hf, stabThresh ) && this.vectorCompare( hpAvg, hp, stabThresh ) )
+            {
+                headsetStable = true;
+            }
+            else
+            {
+                headsetStable = false;
+            }
+
+            if( this.vectorCompare( lhpAvg, lhp, stabThresh ) && this.vectorCompare( rhpAvg, rhp, stabThresh ) )
+            {
+                controlStable = true;
+            }
+            else
+            {
+                controlStable = false;
+            }
+
+            // Passed by Reference values forward view direction and perpendicular
+            var v = this.fV;
+            var p = this.fP;
+
+            v = hf;
+            p = ( p.add( lhpAvg.subtract( rhpAvg ).cross( down ) ).scale( 1 / ( p.add(lhpAvg.subtract( rhp ).cross( down ) ).length() ) ) );
+            // Find P as angle from straight out ( 0, 0 , 1)
+            p.normalize();
+            var rotP = Vector3.Zero();
+            var out = new Vector3( 0, 0, 1 );
+            rotP.y = Math.acos( Vector3.Dot( out, p ));
+
+            // Add sign to rotP
+            if( ( p.cross( out ).y > 0 ) )
+            {
+                rotP.y *= -1;
+            }
+
+            var aCross : number;
+            var aLinear: number;
+
+            var hd = ( lhpAvg.subtract( rhpAvg ) );
+            var ld = ( lhpAvg.subtract( hpAvg ) );
+            var rd = ( rhpAvg.subtract( hpAvg ) );
+
+            aCross  = Math.acos( Vector3.Dot( hd, ld.add(rd) ) / ( hd.length() * ld.add( rd ).length() ) );
+            aLinear = Math.acos( Vector3.Dot( hd, ld) / ( hd.length() * ld.length() ) );
+
+            var bfCurrent = this.bfActual;
+            var bfLast    = this.bfActual;
+            headsetStable = controlStable = true;
+            // Assume headset and both controllers are stable
+            if( headsetStable && controlStable )
+            {
+                // aCross ~90 degrees or aLinear ~0 degrees and
+                if( ( ( aCross < ( Math.PI / 2 + 0.1) ) && ( aCross > ( Math.PI / 2 - 0.1 ) ) || ( Math.abs( aLinear ) < 0.1 ) ) &&
+                    ( this.vectorCompare( rotP, v, 0.398 ) ) )
+                {
+                    bfCurrent = v;
+                }
+            }
+            // Below Conditions are Currently not used but they maybe in the future
+            // still tweaking
+            // Assume only Headset is stable
+            else if( headsetStable && !controlStable )
+            {
+                // check diff p, v
+                if( this.vectorCompare( rotP, v, 0.398 ) )
+                { // similiar values v more reliable than p (stable head)
+                    bfCurrent = v;
+                }
+                else
+                {
+                    bfCurrent = v.scale(.5).add(rotP.scale(.5));
+                }
+            }
+            // Assume only controllers are stable
+            else if( !headsetStable && controlStable )
+            { // user likely looking around maintain orientation
+                /* Do Nothing bfCurrent=bfLast */
+            }
+            // Assume headset and both controllers are unstable
+            else if( !headsetStable && !controlStable )
+            { //No reliable data don't change
+                /* Do Nothing bfCurrent=bfLast */
+            }
+
+            var blendFactor = 0.1;
+            if( (( bfCurrent.y * bfLast.y) < 0) )
+            {
+                this.bfActual = bfCurrent;
+            }
+            else
+            {
+                this.bfActual = ( bfLast.scale( 1 - blendFactor ).add( bfCurrent.scale( blendFactor ) ) );
+            }
+
+            this.fV = v;
+            this.fP = p;
+
+            //Update user position
+            var userSkel = this.scene.getSkeletonByName("Skeleton0");
+            if( userSkel )
+            {
+                this.poleTargetTrans.rotation = this.bfActual;
+                userSkel.bones[0].setYawPitchRoll( -Math.PI / 2, -(Math.PI / 2), this.bfActual.y, Space.LOCAL );
+            }
+
+        }
+    }
+
+    // Calibration Procedures
     private defaultCal( height: number, armSpan: number)
     {
         var arm            = (armSpan / 2);
