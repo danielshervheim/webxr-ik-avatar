@@ -24,6 +24,7 @@ import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
 import { BoneIKController } from "@babylonjs/core/Bones/boneIKController"
 import { Mesh } from "@babylonjs/core/Meshes/mesh"
+import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial"
 
 // Side effects
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -31,7 +32,7 @@ import "@babylonjs/core/Helpers/sceneHelpers";
 // Import debug layer
 import "@babylonjs/inspector";
 
-const loadStudioScene = false;
+const loadStudioScene = true;
 
 enum CalibrationMode
 {
@@ -76,6 +77,9 @@ class Game
     private targetRight: Mesh;
     private targetLeft: Mesh;
 
+    private lightmapDictionary : { [id: string] : Array<string>; } = {};
+    private lightmapTextures : { [id: string] : Texture | null } = {};
+
     constructor()
     {
         // Get the canvas element
@@ -107,6 +111,59 @@ class Game
 
         this.targetRight = MeshBuilder.CreateSphere("Right Target", { diameter: 0.1 }, this.scene);
         this.targetLeft  = MeshBuilder.CreateSphere("Left Target",  { diameter: 0.1 }, this.scene);
+
+        // Setup the lightmap dictionary. Unfortunately this is necessary
+        // because GLB does not natively support embedded lightmaps in materials.
+        this.lightmapDictionary["bar_lightmap.jpeg"] = [
+            // "Material_177",
+            "bar",
+        ];
+
+        this.lightmapDictionary["wall_lightmap.jpeg"] = [
+            "middle_wall",
+        ];
+
+        this.lightmapDictionary["windows_lightmap.jpeg"] = [
+            "bar_windows",
+            "curtains",
+        ];
+
+        this.lightmapDictionary["kitchen_lightmap.jpeg"] = [
+            "cabinets",
+            "sink",
+            "countertop",
+            "bar_kitchen",
+        ];
+
+        this.lightmapDictionary["props_a_lightmap.jpeg"] = [
+            "frames_wall",
+            "doors_double",
+            "door_single",
+            "tv_frame",
+        ];
+
+
+        this.lightmapDictionary["walls_lightmap.jpeg"] = [
+            "floor_lamp_gray",
+            "ceiling",
+            "wall_double_doors",
+            "wall_entry",
+            "wall_kitchen",
+            "wall_table",
+            "floor",
+        ];
+
+        this.lightmapDictionary["props_big_lightmap.jpeg"] = [
+            "chair_top",
+            "chair_legs",
+            "ottoman",
+            "rug",
+            "couch",
+            "console",
+            "shelves",
+            "table",
+            "tv_screen",
+        ];
     }
 
     start() : void
@@ -250,6 +307,21 @@ class Game
             });
         }
 
+        // Load in the lightmaps.
+        for (let lightmap in this.lightmapDictionary)
+        {
+            let loadLightmap = assetsManager.addTextureTask("loading lightmap (" + lightmap + ")", 'assets/lightmaps/' + lightmap, false, false);
+            loadLightmap.onSuccess = (task)=>
+            {
+                task.texture.coordinatesIndex = 1;
+                this.lightmapTextures[lightmap] = task.texture;
+            }
+            loadLightmap.onError = (task)=>
+            {
+                console.log("failed to load lightmap (" + lightmap + ")");
+            }
+        }
+
         // Setup a default calibration for the user limb lengths
         this.defaultCal( camera.position.y, camera.position.y);
 
@@ -326,7 +398,7 @@ class Game
             }
 
             // Create a task for each asset you want to load
-            var worldTask       = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
+            var worldTask       = assetsManager.addMeshTask("world task", "", "assets/world2.glb", "");
             worldTask.onSuccess = (task) => {
                 worldTask.loadedMeshes[0].name      = "world";
                 worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 0);
@@ -500,6 +572,31 @@ class Game
 
                 staticTextTexture.addControl(this.staticText);
             }
+
+            // Assign the lightmaps.
+            for (let lightmap in this.lightmapDictionary)
+            {
+                if (this.lightmapTextures[lightmap])
+                {
+                    for (let materialName of this.lightmapDictionary[lightmap])
+                    {
+                        let material = this.scene.getMaterialByName(materialName);
+                        if (material)
+                        {
+                            let lightmapTexture: Texture = this.lightmapTextures[lightmap]!;
+                            // Set the lightmap
+                            (<PBRMaterial>material).lightmapTexture = lightmapTexture;
+                            (<PBRMaterial>material).useLightmapAsShadowmap = true;
+                        }
+                        else
+                        {
+                            console.error("didn't find material (" + materialName + ")");
+                        }
+                    }
+                }
+
+            }
+
             // Show the debug layer
             this.scene.debugLayer.show();
         }

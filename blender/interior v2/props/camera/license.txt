@@ -1,0 +1,11 @@
+Model Information:
+* title:	Camera
+* source:	https://sketchfab.com/3d-models/camera-4c2e2708d0184a2c87158706131c3cb3
+* author:	LesikStory (https://sketchfab.com/LesikStory)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Camera" (https://sketchfab.com/3d-models/camera-4c2e2708d0184a2c87158706131c3cb3) by LesikStory (https://sketchfab.com/LesikStory) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
