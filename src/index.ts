@@ -48,12 +48,12 @@ enum CalibrationMode
 enum AvatarMeasurements
 {
     leftArm,
-    leftWrist2Elbow,
-    leftElbow2Shoulder,
+    leftForeArm,
+    leftUpperArm,
 
     rightArm,
-    rightWrist2Elbow,
-    rightElbow2Shoulder,
+    rightForeArm,
+    rightUpperArm,
 
     height,
     hipHeight,
@@ -113,11 +113,11 @@ class Game
         this.calibrationMode = CalibrationMode.hide;
         this.avatarMeasurements = [     //Index into based on the Avatar Measurement enum
             AvatarMeasurements.leftArm,
-            AvatarMeasurements.leftWrist2Elbow,
-            AvatarMeasurements.leftElbow2Shoulder,
+            AvatarMeasurements.leftForeArm,
+            AvatarMeasurements.leftUpperArm,
             AvatarMeasurements.rightArm,
-            AvatarMeasurements.rightWrist2Elbow,
-            AvatarMeasurements.rightElbow2Shoulder,
+            AvatarMeasurements.rightForeArm,
+            AvatarMeasurements.rightUpperArm,
             AvatarMeasurements.height,
             AvatarMeasurements.hipHeight];
 
@@ -1007,19 +1007,19 @@ class Game
     // Calibration Procedures
     private defaultCal( height: number, armSpan: number)
     {
-        var arm            = (armSpan / 2);
-        var wrist2Elbow    = (arm / 2);
-        var elbow2Shoulder = (arm / 2);
-        var hipHeight      = (height / 2);
+        var arm       = (armSpan / 2);
+        var foreArm   = (arm / 2);
+        var upperArm  = (arm / 2);
+        var hipHeight = (height / 2);
 
-        this.avatarMeasurements[AvatarMeasurements.leftArm]              = arm;
-        this.avatarMeasurements[AvatarMeasurements.leftWrist2Elbow ]     = wrist2Elbow;
-        this.avatarMeasurements[AvatarMeasurements.leftElbow2Shoulder ]  = elbow2Shoulder;
-        this.avatarMeasurements[AvatarMeasurements.rightArm]             = arm;
-        this.avatarMeasurements[AvatarMeasurements.rightWrist2Elbow ]    = wrist2Elbow;
-        this.avatarMeasurements[AvatarMeasurements.rightElbow2Shoulder ] = elbow2Shoulder;
-        this.avatarMeasurements[AvatarMeasurements.height ]              = height;
-        this.avatarMeasurements[AvatarMeasurements.hipHeight ]           = hipHeight;
+        this.avatarMeasurements[AvatarMeasurements.leftArm]        = arm;
+        this.avatarMeasurements[AvatarMeasurements.leftForeArm ]   = foreArm;
+        this.avatarMeasurements[AvatarMeasurements.leftUpperArm ]  = upperArm;
+        this.avatarMeasurements[AvatarMeasurements.rightArm]       = arm;
+        this.avatarMeasurements[AvatarMeasurements.rightForeArm ]  = foreArm;
+        this.avatarMeasurements[AvatarMeasurements.rightUpperArm ] = upperArm;
+        this.avatarMeasurements[AvatarMeasurements.height ]        = height;
+        this.avatarMeasurements[AvatarMeasurements.hipHeight ]     = hipHeight;
     }
     private recordArmSpan()
     {
@@ -1037,24 +1037,24 @@ class Game
     }
     private recordArmBones()
     {
-        var elbow2ShoulderLength = 0;
-        var wrist2ElbowLength    = 0;
+        var upperArmLength = 0;
+        var foreArmLength  = 0;
         if( this.rightController?.grip && this.leftController?.grip )
         {
             var torsoWidth = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
 
             // Update Arm Lengths to Account for Torso Width
             this.avatarMeasurements[AvatarMeasurements.rightArm] -= ( torsoWidth / 2 );
-            this.avatarMeasurements[AvatarMeasurements.leftArm] -= ( torsoWidth / 2 );
+            this.avatarMeasurements[AvatarMeasurements.leftArm]  -= ( torsoWidth / 2 );
 
             // Assume User Arm Proportions are the standard proportions (shoulder2Elbow 45%, elbow2Wrist 55%)
-            elbow2ShoulderLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.55) );
-            wrist2ElbowLength    = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.45) );
+            upperArmLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.55) );
+            foreArmLength  = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.45) );
 
-            this.avatarMeasurements[AvatarMeasurements.leftElbow2Shoulder]  = elbow2ShoulderLength;
-            this.avatarMeasurements[AvatarMeasurements.rightElbow2Shoulder] = elbow2ShoulderLength;
-            this.avatarMeasurements[AvatarMeasurements.leftWrist2Elbow]     = wrist2ElbowLength;
-            this.avatarMeasurements[AvatarMeasurements.rightWrist2Elbow]    = wrist2ElbowLength;
+            this.avatarMeasurements[AvatarMeasurements.leftUpperArm]  = upperArmLength;
+            this.avatarMeasurements[AvatarMeasurements.rightUpperArm] = upperArmLength;
+            this.avatarMeasurements[AvatarMeasurements.leftForeArm]   = foreArmLength;
+            this.avatarMeasurements[AvatarMeasurements.rightForeArm]  = foreArmLength;
         }
     }
     private recordHeight()
