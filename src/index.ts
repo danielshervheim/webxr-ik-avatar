@@ -91,6 +91,7 @@ class Game
     private fP      : Vector3;
     private bfActual: Vector3;
 
+    private headsetPosTrans: TransformNode;
     private poleTargetTrans: TransformNode;
 
     constructor()
@@ -195,6 +196,8 @@ class Game
         this.fV       = Vector3.Zero();
         this.fP       = Vector3.Zero();
         this.bfActual = Vector3.Zero();
+
+        this.headsetPosTrans = new TransformNode("headset position", this.scene );
         this.poleTargetTrans = new TransformNode("pole Target Tran", this.scene );
     }
 
@@ -311,7 +314,8 @@ class Game
         userTask.onSuccess = (task) => {
             userTask.loadedMeshes[0].name     = "user";
             userTask.loadedMeshes[0].scaling  = new Vector3( 0.025, 0.025, 0.025 );
-            userTask.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
+            userTask.loadedMeshes[0].position = new Vector3( 0, 0, -0.05 );
+            userTask.loadedMeshes[0].setParent(this.headsetPosTrans);
 
             var mesh     = userTask.loadedMeshes[0];
             var skeleton = userTask.loadedSkeletons[0];
@@ -643,6 +647,8 @@ class Game
         // Polling for user forward direction
         this.processUserForward();
 
+        // Procer users position and head rotation
+        this.processUserPosRot();
     }
 
     // Process event handlers for controller input
@@ -972,6 +978,30 @@ class Game
 
         }
     }
+
+
+    // Process User position and head rotation
+    private processUserPosRot()
+    {
+        if( this.xrCamera )
+        {
+            // Only Update user position if noticeable change not just looking down
+            if( Vector3.Distance( this.xrCamera.position, this.headsetPosTrans.position ) > 1.60)
+            {
+                this.headsetPosTrans.position = this.xrCamera.position.clone();
+                this.headsetPosTrans.position.y = 0;
+            }
+            // update user head rotation
+            var userSkel = this.scene.getSkeletonByName("Skeleton0");
+            if( userSkel )
+            {
+                var rot = this.xrCamera.rotationQuaternion.toEulerAngles();
+                // Yaw = z, Pitch = y, Roll = x;
+                userSkel.bones[7].setYawPitchRoll( rot.z, ( rot.y - this.bfActual.y ), rot.x - ( 11.099 * Math.PI / 180 ), Space.LOCAL);
+            }
+        }
+    }
+
 
     // Calibration Procedures
     private defaultCal( height: number, armSpan: number)
