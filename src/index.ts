@@ -383,14 +383,14 @@ class Game
                 switch(i)
                 {
                     case 0:
-                        glass.position = new Vector3( -2.49, 1.269, -1.037 );
-                        glass.scaling  = new Vector3( 0.575, 0.5, 0.1 );
+                        glass.position = new Vector3( -6.856, 1.943, 4 );
+                        glass.scaling  = new Vector3( 1.0, 0.6, 0.1 );
                         glass.rotation = new Vector3( 0, 270 * ( Math.PI / 180 ), 0);
                         break;
                     case 1:
-                        glass.position = new Vector3( 0.01, 1.055, 2.378 );
-                        glass.scaling  = new Vector3( 0.099, 0.415, 0.002 );
-                        glass.rotation = new Vector3( 5.080 * ( Math.PI / 180 ), 0, 0 );
+                        glass.position = new Vector3( -1.059, 1.873, 10.020 );
+                        glass.scaling  = new Vector3( 0.247, 0.7, 0.002 );
+                        glass.rotation = new Vector3( 0, 0, 0 );
                         break;
                 }
                 //Ensure working with new values for glass by computing and obtaining its worldMatrix
@@ -438,6 +438,7 @@ class Game
             worldTask.onSuccess = (task) => {
                 worldTask.loadedMeshes[0].name      = "world";
                 worldTask.loadedMeshes[0].position  = new Vector3( 0, 0.001, 0);
+                worldTask.loadedMeshes[0].rotation  = new Vector3( 0, 0, 0);
                 worldTask.loadedMeshes[0].scaling   = new Vector3(1.25, 1.25, 1.25);
             }
         }
