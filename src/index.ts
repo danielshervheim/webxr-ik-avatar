@@ -32,8 +32,9 @@ import "@babylonjs/core/Helpers/sceneHelpers";
 
 // Import debug layer
 import "@babylonjs/inspector";
+import { bonesDeclaration } from "@babylonjs/core/Shaders/ShadersInclude/bonesDeclaration";
 
-const loadStudioScene = true;
+const loadStudioScene = false;
 
 enum CalibrationMode
 {
@@ -229,7 +230,7 @@ class Game
 
         // This attaches the camera to the canvas
         camera.attachControl(this.canvas, true);
-
+        camera.speed = 0.2;
         // Creates the XR experience helper
         const xrHelper = await this.scene.createDefaultXRExperienceAsync({});
 
@@ -308,36 +309,62 @@ class Game
         }
 
         // Create a task for each asset you want to load
-        var poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 2.5}, this.scene);
+        var poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
 
-        var userTask       = assetsManager.addMeshTask( "user task", "", "assets/dude.babylon", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        var userTask       = assetsManager.addMeshTask( "user task", "", "assets/userAvatar.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
         userTask.onSuccess = (task) => {
             userTask.loadedMeshes[0].name     = "user";
-            userTask.loadedMeshes[0].scaling  = new Vector3( 0.025, 0.025, 0.025 );
-            userTask.loadedMeshes[0].position = new Vector3( 0, 0, -0.05 );
+            userTask.loadedMeshes[0].position = new Vector3( 0, 0, 0 );//-0.05 );
+            userTask.loadedMeshes[0].scaling  = new Vector3( 1, 1, 1 );
             userTask.loadedMeshes[0].setParent(this.headsetPosTrans);
 
+            userTask.loadedSkeletons[0].name = "userSkel"
             var mesh     = userTask.loadedMeshes[0];
             var skeleton = userTask.loadedSkeletons[0];
 
             poleTarget.position.x       = 0;
-            poleTarget.position.y       = 100;
-            poleTarget.position.z       = -50;
+            poleTarget.position.y       = 1.3;
+            poleTarget.position.z       = -10;
             this.poleTargetTrans.parent = mesh;
             poleTarget.parent           = this.poleTargetTrans;
 
-            var ikCtlRight = new BoneIKController(mesh, skeleton.bones[14], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
-            var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[33], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+            // IDX should potential be ForeArm
+            var lBoneIdx = skeleton.getBoneIndexByName("LeftForeArm");
+            var rBoneIdx = skeleton.getBoneIndexByName("RightForeArm");
+            Logger.Log("Hands at " + lBoneIdx + " and " + rBoneIdx)
+            // var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+            var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+            var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[rBoneIdx], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
 
             ikCtlRight.maxAngle = Math.PI * .9;
             ikCtlLeft.maxAngle  = Math.PI * .9;
 
             // BoneAxesViewer can show axes of each bone when enablesd
-            // var bone1AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[14], mesh);
-            // var bone2AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[13], mesh);
+            // var bone1AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[rBoneIdx], <Mesh>mesh);
+            // var bone2AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[lBoneIdx], <Mesh>mesh);
+
+            // register event to update ik model before every frame
+            // GLB models needs the transform nodes updated in addition to the skeleton
             this.scene.registerBeforeRender(function () {
                 ikCtlRight.update();
                 ikCtlLeft.update();
+                //update Mesh Nodes ONLY NEEDED WITH .GLB files
+                // both arms and forearms
+                var lArm     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].getTransformNode();
+                var rArm     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].getTransformNode();
+                var lForeArm = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].getTransformNode();
+                var rForeArm = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].getTransformNode();
+                if( lArm && rArm && lForeArm && rForeArm )
+                {
+                    lArm.position               = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].position;
+                    lArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].rotationQuaternion;
+                    rArm.position               = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].position;
+                    rArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].rotationQuaternion;
+                    lForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].position;
+                    lForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].rotationQuaternion;
+                    rForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].position;
+                    rForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].rotationQuaternion;
+                }
             });
 
             userTask.loadedMeshes[0].rotation = this.bfActual;
@@ -633,6 +660,8 @@ class Game
                 }
 
             }
+            // Get the Bone Lengths for the ready player me skeleton
+            this.getBoneLengths();
 
             // Show the debug layer
             this.scene.debugLayer.show();
@@ -970,11 +999,15 @@ class Game
             this.fP = p;
 
             //Update user position
-            var userSkel = this.scene.getSkeletonByName("Skeleton0");
+            var userSkel = this.scene.getSkeletonByName("userSkel");
             if( userSkel )
             {
                 this.poleTargetTrans.rotation = this.bfActual;
-                userSkel.bones[0].setYawPitchRoll( -Math.PI / 2, -(Math.PI / 2), this.bfActual.y, Space.LOCAL );
+                var mainTrans = userSkel.bones[0].getTransformNode();
+                if( mainTrans )
+                {
+                    mainTrans.rotationQuaternion = this.bfActual.toQuaternion();
+                }
             }
 
         }
@@ -993,16 +1026,55 @@ class Game
                 this.headsetPosTrans.position.y = 0;
             }
             // update user head rotation
-            var userSkel = this.scene.getSkeletonByName("Skeleton0");
+            var userSkel = this.scene.getSkeletonByName("userSkel");
             if( userSkel )
             {
                 var rot = this.xrCamera.rotationQuaternion.toEulerAngles();
                 // Yaw = z, Pitch = y, Roll = x;
-                userSkel.bones[7].setYawPitchRoll( rot.z, ( rot.y - this.bfActual.y ), rot.x - ( 11.099 * Math.PI / 180 ), Space.LOCAL);
+                var headIdx = userSkel.getBoneIndexByName("Head");
+                var headTrans = userSkel.bones[headIdx].getTransformNode();
+                if( headTrans )
+                {
+                    headTrans.rotationQuaternion = new Vector3( rot.x, rot.y - this.bfActual.y, rot.z).toQuaternion();
+                }
             }
         }
     }
 
+
+    // Get the User Avatar Bone Lengths
+    // This only works for a single readyplayer me full body avatar right now
+    private getBoneLengths()
+    {
+        var userSkel = this.scene.getSkeletonByName("userSkel");
+        if( userSkel )
+        {
+            // Bones Needed
+            // Left  Arm, ForeArm, and Hand
+            // Right Arm, ForeArm, and Hand
+            // Note Ready Player Me inverts left/right because it sets based on looking at face of avatar
+            // Get Index of Bones
+            var rArmId     = userSkel.getBoneIndexByName("LeftArm");
+            var rForeArmId = userSkel.getBoneIndexByName("LeftForeArm");
+            var rHandId    = userSkel.getBoneIndexByName("LeftHand");
+            var lArmId     = userSkel.getBoneIndexByName("RightArm");
+            var lForeArmId = userSkel.getBoneIndexByName("RightForeArm");
+            var lHandId    = userSkel.getBoneIndexByName("RightHand");
+
+            // Determine Lengths of bones
+            var rArmLength     = Vector3.Distance( userSkel.bones[rArmId].getAbsolutePosition(), userSkel.bones[rForeArmId].getAbsolutePosition() );
+            var rForeArmLength = Vector3.Distance( userSkel.bones[rForeArmId].getAbsolutePosition(), userSkel.bones[rHandId].getAbsolutePosition() );
+            var lArmLength     = Vector3.Distance( userSkel.bones[lArmId].getAbsolutePosition(), userSkel.bones[lForeArmId].getAbsolutePosition() );
+            var lForeArmLength = Vector3.Distance( userSkel.bones[lForeArmId].getAbsolutePosition(), userSkel.bones[lHandId].getAbsolutePosition() );
+
+            // Store Lengths to Bones
+            userSkel.bones[rArmId].length     = rArmLength;
+            userSkel.bones[rForeArmId].length = rForeArmLength;
+            userSkel.bones[lArmId].length     = lArmLength;
+            userSkel.bones[lForeArmId].length = lForeArmLength;
+            userSkel.bones[lForeArmId].length = lForeArmLength;
+        }
+    }
 
     // Calibration Procedures
     private defaultCal( height: number, armSpan: number)
