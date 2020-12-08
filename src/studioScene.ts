@@ -11,6 +11,7 @@ import { IKAvatar } from "./ikAvatar";
 import { Mirror } from "./mirror";
 
 // Babylon imports.
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { AssetsManager, SmartArray } from "@babylonjs/core";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
@@ -27,6 +28,16 @@ import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
 // Side effects.
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector";
+
+// These meshes are hidden from the XR camera, but are still rendered in mirrors.
+// This is useful to hide the head mesh, for example, since the XR camera is usually
+// inside the avatars head.
+const hideFromXRCamera = [
+    "EyeLeft",
+    "EyeRight",
+    "Wolf3D_Head",
+    "Wolf3D_Teeth"
+];
 
 // A studio scene test bed for our IKAvatar class.
 export class StudioScene
@@ -237,6 +248,16 @@ export class StudioScene
 
         assetsManager.onFinish = (tasks) =>
         {
+            // Hide specified meshes from the XR camera.
+            for (let meshToHideName of hideFromXRCamera)
+            {
+                let meshToHide: AbstractMesh | null = this.scene.getMeshByName(meshToHideName);
+                if (meshToHide)
+                {
+                    meshToHide.layerMask = 0x00000000;
+                }
+            }
+            
             // Set each world mesh to reflect off the mirrors.
             if (worldTask)
             {
