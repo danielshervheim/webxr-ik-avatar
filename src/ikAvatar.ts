@@ -39,9 +39,9 @@ import { bonesDeclaration } from "@babylonjs/core/Shaders/ShadersInclude/bonesDe
 enum CalibrationMode
 {
     startCal,
-    armSpan,
-    armBent,
-    height,
+    height,     /* Straight Up      */
+    armSpan,    /* T-Pose           */
+    shoulderTouch,    /* Touch Shoulders  */
     finish,
     hide
 }
@@ -192,7 +192,7 @@ export class IKAvatar
     {
         this.calibrationAvatarTask = task;
 
-        task.loadedMeshes[0].name     = "hero";
+        task.loadedMeshes[0].name     = "calVatar";
         task.loadedMeshes[0].scaling  = new Vector3( 0.1, 0.1, 0.1 );
         task.loadedMeshes[0].position = new Vector3( 0, 0, 2 );
         task.loadedMeshes[0].setEnabled(false);
@@ -206,7 +206,7 @@ export class IKAvatar
         var poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
 
         task.loadedMeshes[0].name     = "user";
-        task.loadedMeshes[0].position = new Vector3( 0, 0, 0 );//-0.05 );
+        task.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
         task.loadedMeshes[0].scaling  = new Vector3( 1, 1, 1 );
         task.loadedMeshes[0].setParent(this.headsetPosTrans);
 
@@ -221,15 +221,15 @@ export class IKAvatar
         poleTarget.parent           = this.poleTargetTrans;
 
         // IDX should potential be ForeArm
-        var lBoneIdx = skeleton.getBoneIndexByName("LeftForeArm");
-        var rBoneIdx = skeleton.getBoneIndexByName("RightForeArm");
-        Logger.Log("Hands at " + lBoneIdx + " and " + rBoneIdx)
+        // var lBoneIdx = skeleton.getBoneIndexByName("LeftForeArm");
+        // var rBoneIdx = skeleton.getBoneIndexByName("RightForeArm");
+        // Logger.Log("Hands at " + lBoneIdx + " and " + rBoneIdx)
         // var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
-        var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
-        var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[rBoneIdx], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+        // var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
+        // var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[rBoneIdx], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
 
-        ikCtlRight.maxAngle = Math.PI * .9;
-        ikCtlLeft.maxAngle  = Math.PI * .9;
+        // ikCtlRight.maxAngle = Math.PI * .9;
+        // ikCtlLeft.maxAngle  = Math.PI * .9;
 
         // BoneAxesViewer can show axes of each bone when enablesd
         // var bone1AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[rBoneIdx], <Mesh>mesh);
@@ -238,25 +238,25 @@ export class IKAvatar
         // register event to update ik model before every frame
         // GLB models needs the transform nodes updated in addition to the skeleton
         this.scene.registerBeforeRender(function () {
-            ikCtlRight.update();
-            ikCtlLeft.update();
-            //update Mesh Nodes ONLY NEEDED WITH .GLB files
-            // both arms and forearms
-            var lArm     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].getTransformNode();
-            var rArm     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].getTransformNode();
-            var lForeArm = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].getTransformNode();
-            var rForeArm = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].getTransformNode();
-            if( lArm && rArm && lForeArm && rForeArm )
-            {
-                lArm.position               = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].position;
-                lArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].rotationQuaternion;
-                rArm.position               = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].position;
-                rArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].rotationQuaternion;
-                lForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].position;
-                lForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].rotationQuaternion;
-                rForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].position;
-                rForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].rotationQuaternion;
-            }
+            // ikCtlRight.update();
+            // ikCtlLeft.update();
+            // //update Mesh Nodes ONLY NEEDED WITH .GLB files
+            // // both arms and forearms
+            // var lArm     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].getTransformNode();
+            // var rArm     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].getTransformNode();
+            // var lForeArm = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].getTransformNode();
+            // var rForeArm = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].getTransformNode();
+            // if( lArm && rArm && lForeArm && rForeArm )
+            // {
+            //     lArm.position               = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].position;
+            //     lArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].rotationQuaternion;
+            //     rArm.position               = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].position;
+            //     rArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].rotationQuaternion;
+            //     lForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].position;
+            //     lForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].rotationQuaternion;
+            //     rForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].position;
+            //     rForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].rotationQuaternion;
+            // }
         });
 
         task.loadedMeshes[0].rotation = this.bfActual;
@@ -347,20 +347,59 @@ export class IKAvatar
         var foreArmLength  = 0;
         if( this.rightController?.grip && this.leftController?.grip )
         {
-            var torsoWidth = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
+            var user     = this.scene.getMeshByName("user");
+            var userSkel = this.scene.getSkeletonByName("userSkel");
+            // Only resize if the user avatar exists and its scaling is uniform
+            if( userSkel && user && ( !user.scaling.isNonUniform ) )
+            {
+                // Get Distance Between the hand and the wrist
+                var lHandIdx   = userSkel.getBoneIndexByName( "LeftHand" );
 
-            // Update Arm Lengths to Account for Torso Width
-            this.avatarMeasurements[AvatarMeasurements.rightArm] -= ( torsoWidth / 2 );
-            this.avatarMeasurements[AvatarMeasurements.leftArm]  -= ( torsoWidth / 2 );
+                // Note indexes are swapped intentionally
+                var rUpperArmIdx = userSkel.getBoneIndexByName( "LeftArm" );
+                var lUpperArmIdx = userSkel.getBoneIndexByName( "RightArm" );
+                var lForeArmIdx  = userSkel.getBoneIndexByName( "RightForeArm" );
+                var lHandIdx     = userSkel.getBoneIndexByName( "RightHand" );
 
-            // Assume User Arm Proportions are the standard proportions (shoulder2Elbow 45%, elbow2Wrist 55%)
-            upperArmLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.55) );
-            foreArmLength  = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (.45) );
+                // Get Transform Nodes to modify
+                var rUpperArmTrans = userSkel.bones[rUpperArmIdx].getTransformNode();
+                var lUpperArmTrans = userSkel.bones[lUpperArmIdx].getTransformNode();
 
-            this.avatarMeasurements[AvatarMeasurements.leftUpperArm]  = upperArmLength;
-            this.avatarMeasurements[AvatarMeasurements.rightUpperArm] = upperArmLength;
-            this.avatarMeasurements[AvatarMeasurements.leftForeArm]   = foreArmLength;
-            this.avatarMeasurements[AvatarMeasurements.rightForeArm]  = foreArmLength;
+                // Get Bone Lengths when Scaled at 1
+                var rUpperArmLength = userSkel.bones[rUpperArmIdx].length;
+                var lUpperArmLength = userSkel.bones[lUpperArmIdx].length;
+                var lForeArmLength  = userSkel.bones[lForeArmIdx].length;
+                var handLength      = userSkel.bones[lHandIdx].length;
+
+                // Ratio length: hand, forearm upper arm
+                var handRatio     = handLength      / ( handLength + lForeArmLength + lUpperArmLength );
+                var foreArmRatio  = lForeArmLength  / ( handLength + lForeArmLength + lUpperArmLength );
+                var upperArmRatio = lUpperArmLength / ( handLength + lForeArmLength + lUpperArmLength );
+
+                var torsoWidth = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
+                // Update Arm Lengths to Account for Torso Width
+                this.avatarMeasurements[AvatarMeasurements.rightArm] -= ( torsoWidth / 2 );
+                this.avatarMeasurements[AvatarMeasurements.leftArm]  -= ( torsoWidth / 2 );
+
+                // Assume User Arm Proportions are the standard proportions (shoulder2Elbow 45%, elbow2Wrist 55%)
+                upperArmLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (upperArmRatio) );
+                foreArmLength  = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (foreArmRatio) );
+                handLength     = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (handRatio) );
+
+                this.avatarMeasurements[AvatarMeasurements.leftUpperArm]  = upperArmLength;
+                this.avatarMeasurements[AvatarMeasurements.rightUpperArm] = upperArmLength;
+                this.avatarMeasurements[AvatarMeasurements.leftForeArm]   = foreArmLength;
+                this.avatarMeasurements[AvatarMeasurements.rightForeArm]  = foreArmLength;
+
+                // Upper Arm Scalings
+                var rUpperArmScaled = ( upperArmLength / rUpperArmLength ) / user.scaling.x;
+                var lUpperArmScaled = ( upperArmLength / lUpperArmLength ) / user.scaling.x;
+                rUpperArmTrans!.scaling = new Vector3( rUpperArmScaled, rUpperArmScaled, rUpperArmScaled );
+                lUpperArmTrans!.scaling = new Vector3( lUpperArmScaled, lUpperArmScaled, lUpperArmScaled );
+
+                rUpperArmTrans?.computeWorldMatrix();
+                lUpperArmTrans?.computeWorldMatrix();
+            }
         }
     }
 
@@ -368,8 +407,22 @@ export class IKAvatar
     {
         if( this.xrCamera?.realWorldHeight)
         {
-            this.avatarMeasurements[AvatarMeasurements.height]    = this.xrCamera.realWorldHeight;
-            this.avatarMeasurements[AvatarMeasurements.hipHeight] = (this.xrCamera.realWorldHeight / 2);
+            var height = this.xrCamera.realWorldHeight;
+            this.avatarMeasurements[AvatarMeasurements.height]    = height;//this.xrCamera.realWorldHeight;
+            this.avatarMeasurements[AvatarMeasurements.hipHeight] = ( height / 2 );//(this.xrCamera.realWorldHeight / 2);
+            //scale entire user based on their height
+            var user = this.scene.getMeshByName("user");
+
+            if( user )
+            {
+                // Scaling Procedure
+                // Default avatar height is 1.725 at the eyes
+                // New Scale = realWorld height / 1.725
+                var scaling = user.scaling.clone();
+                var scaledHeight = this.xrCamera.realWorldHeight / 1.725;
+                user.scaling = new Vector3( scaledHeight, scaledHeight, scaledHeight );
+                Logger.Log("Scaled user height from " + scaling + " to " + user.scaling );
+            }
         }
     }
 
@@ -395,7 +448,7 @@ export class IKAvatar
     // Toggle for Avatar Animations in Calibration
     private onRightA(component?: WebXRControllerComponent)
     {
-        var calVatar = this.scene.getMeshByName("hero");
+        var calVatar = this.scene.getMeshByName("calVatar");
         if( calVatar )
         {
             // Get for later user
@@ -438,7 +491,28 @@ export class IKAvatar
                     "When you are ready to start, press the a-button.";
                     break;
 
+                case CalibrationMode.height:
+
+                    // Animate Avatar to standing upright with arms at its side
+                    // Need to change this animation to above description
+                    if( idleAnim )
+                    {
+                        idleAnim.stop();
+                    }
+                    const walkBackAnim = this.scene.getAnimationGroupByName("WalkingBack");
+                    if( walkBackAnim )
+                    {
+                        walkBackAnim.start(false, 1.0, walkBackAnim.from, walkBackAnim.to, true);
+                    }
+
+                    // Inform User to press A after matching pose or press b to cancel
+                    this.staticText.fontSize = 124;
+                    this.staticText.text     = "User Height (1/3)\n Press a when you have\n matched my pose.";
+                    break;
+
                 case CalibrationMode.armSpan:
+                    // Record Users height/(possibly hip height)
+                    this.recordHeight();
                     // Animate Character to first pose
                     // Just used a default animation for now this will need to be changed to the T-Pose
                     // when it is made in Mixamo
@@ -455,12 +529,11 @@ export class IKAvatar
                     }
 
                     // Inform User to press A after matching pose or press B to cancel calibration
-                    // Display on top of calVatar ( T-Pose 1/3 )
-                    this.staticText.fontSize = 124;
-                    this.staticText.text     = "T-Pose (1/3)\n Press a when you have\n matched my pose.";
+                    // Display on top of calVatar ( T-Pose 2/3 )
+                    this.staticText.text = "T-Pose (2/3)\n Press a when you have\n matched my pose.";
                     break;
 
-                case CalibrationMode.armBent:
+                case CalibrationMode.shoulderTouch:
                     // Store users armspan based on controller distance apart
                     this.recordArmSpan();
 
@@ -478,32 +551,12 @@ export class IKAvatar
                     }
 
                     // Inform User to press A after matching pose or press be to cancel (below calVatar)
-                    this.staticText.text = "Bent Arms (2/3)\n Press a when you have\n matched my pose.";
-                    break;
-
-                case CalibrationMode.height:
-                    // Store arm bone lengths from prev pose
-                    this.recordArmBones();
-
-                    // Animate Avatar to standing upright with arms at its side
-                    // Need to change this animation to above description
-                    if( idleAnim )
-                    {
-                        idleAnim.stop();
-                    }
-                    const walkBackAnim = this.scene.getAnimationGroupByName("WalkingBack");
-                    if( walkBackAnim )
-                    {
-                        walkBackAnim.start(false, 1.0, walkBackAnim.from, walkBackAnim.to, true);
-                    }
-
-                    // Inform User to press A after matching pose or press b to cancel
-                    this.staticText.text = "User Height (3/3)\n Press a when you have\n matched my pose.";
+                    this.staticText.text = "Touch your Shoulders (2/3)\n Press a when you have\n matched my pose.";
                     break;
 
                 case CalibrationMode.finish:
-                    // Record Users height/(possibly hip height)
-                    this.recordHeight();
+                    // Store arm bone lengths from prev poses
+                    this.recordArmBones();
 
                     // Inform Calibration Complete
                     this.staticText.text = "Calibration completed\nsuccesfully.\n Press a to escape."
@@ -538,7 +591,7 @@ export class IKAvatar
             {
                 this.calibrationMode = CalibrationMode.hide;
                 // Hide Calibration Avatar
-                var calVatar = this.scene.getMeshByName("hero");
+                var calVatar = this.scene.getMeshByName("calVatar");
                 if( calVatar )
                 {
                     calVatar.setEnabled(false);
@@ -764,12 +817,14 @@ export class IKAvatar
             var lArmId     = userSkel.getBoneIndexByName("RightArm");
             var lForeArmId = userSkel.getBoneIndexByName("RightForeArm");
             var lHandId    = userSkel.getBoneIndexByName("RightHand");
+            var lIndexId   = userSkel.getBoneIndexByName("RightHandIndex1");
 
             // Determine Lengths of bones
             var rArmLength     = Vector3.Distance( userSkel.bones[rArmId].getAbsolutePosition(), userSkel.bones[rForeArmId].getAbsolutePosition() );
             var rForeArmLength = Vector3.Distance( userSkel.bones[rForeArmId].getAbsolutePosition(), userSkel.bones[rHandId].getAbsolutePosition() );
             var lArmLength     = Vector3.Distance( userSkel.bones[lArmId].getAbsolutePosition(), userSkel.bones[lForeArmId].getAbsolutePosition() );
             var lForeArmLength = Vector3.Distance( userSkel.bones[lForeArmId].getAbsolutePosition(), userSkel.bones[lHandId].getAbsolutePosition() );
+            var lIndexLength   = Vector3.Distance( userSkel.bones[lHandId].getAbsolutePosition(), userSkel.bones[lIndexId].getAbsolutePosition() );
 
             // Store Lengths to Bones
             userSkel.bones[rArmId].length     = rArmLength;
@@ -777,6 +832,7 @@ export class IKAvatar
             userSkel.bones[lArmId].length     = lArmLength;
             userSkel.bones[lForeArmId].length = lForeArmLength;
             userSkel.bones[lForeArmId].length = lForeArmLength;
+            userSkel.bones[lHandId].length    = lIndexLength;
         }
     }
 }
