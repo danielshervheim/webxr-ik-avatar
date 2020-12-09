@@ -5,7 +5,7 @@
  */
 
 // IKAvatar imports.
-import { IKAvatar } from "./ikAvatar";
+import { BoneDictionary, CalibrationAnimationDictionary, Side, IKAvatar } from "./ikAvatar";
 
 // Mirror imports.
 import { Mirror } from "./mirror";
@@ -102,7 +102,7 @@ export class BasicScene
         xrHelper.pointerSelection.dispose();
 
         // Register the XR Helper with the IKAvatar.
-        this.ikAvatar.registerXRHelper(xrHelper);
+        this.ikAvatar.registerXRExperience(xrHelper);
 
         // Creates a default skybox
         const environment = this.scene.createDefaultEnvironment({
@@ -126,17 +126,48 @@ export class BasicScene
         let assetsManager = new AssetsManager(this.scene);
 
         // Load the avatar mesh and register the loaded avatar mesh with the IKAvatar.
-        let avatarTask = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        // let avatarTask = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        let avatarTask = assetsManager.addMeshTask("avatar task", "", "assets/ybot/ybot.babylon", "");
         avatarTask.onSuccess = (task) =>
         {
-            this.ikAvatar.registerCalibrationAvatarFromMeshTask(task);
+            let boneDictionary = new BoneDictionary(
+                "mixamorig:RightArm",
+                "mixamorig:RightForeArm",
+                "mixamorig:RightHand",
+                "mixamorig:RightHandMiddle4",
+                "mixamorig:LeftArm",
+                "mixamorig:LeftForeArm",
+                "mixamorig:LeftHand",
+                "mixamorig:LeftHandMiddle4"
+            );
+            let animationDictionary = new CalibrationAnimationDictionary(
+                "YBot_Idle",
+                "YBot_TPose",
+                "YBot_TPose",
+                "YBot_Celebrate"
+            );
+            this.ikAvatar.registerCalibrationAvatarFromMeshTask(task,
+                boneDictionary, animationDictionary, new Vector3(0, 0, 3),
+                new Vector3(0, 0, 0), Vector3.One().scale(0.01));
         }
 
         // Load the user mesh and register it with the IKAvatar.
-        let userTask = assetsManager.addMeshTask( "user task", "", "assets/userAvatar.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        let userTask = assetsManager.addMeshTask( "user task", "", "assets/xbot/xbot.babylon", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
         userTask.onSuccess = (task) =>
         {
-            this.ikAvatar.registerUserAvatarFromMeshTask(task);
+            let boneDictionary = new BoneDictionary(
+                "mixamorig:RightArm",
+                "mixamorig:RightForeArm",
+                "mixamorig:RightHand",
+                "mixamorig:RightHandMiddle4",
+                "mixamorig:LeftArm",
+                "mixamorig:LeftForeArm",
+                "mixamorig:LeftHand",
+                "mixamorig:LeftHandMiddle4"
+            );
+            this.ikAvatar.registerUserAvatarFromMeshTask(task,
+                boneDictionary, new Vector3(0, 0, 0), new Vector3(0, -3.14159, 0),
+                Vector3.One().scale(0.01));
         }
 
         let ground = MeshBuilder.CreateGround("Ground", { width:10, height: 10 }, this.scene );
@@ -255,7 +286,7 @@ export class BasicScene
 
             // Signal to the IKAvatar that all the required assets are loaded, so
             // it can finish setting itself up.
-            this.ikAvatar.onAssetsLoaded();
+            this.ikAvatar.initialize();
 
             // Show the debug layer
             this.scene.debugLayer.show();

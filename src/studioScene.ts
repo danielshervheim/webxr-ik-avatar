@@ -235,7 +235,7 @@ export class StudioScene
         });
 
         // Load the world mesh and scale it appropriately.
-        var worldTask = assetsManager.addMeshTask("world task", "", "assets/world2.glb", "");
+        var worldTask = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
         worldTask.onSuccess = (task) => {
             worldTask.loadedMeshes[0].name = "world";
             worldTask.loadedMeshes[0].position = new Vector3( 0, 0.001, 0);
@@ -257,7 +257,7 @@ export class StudioScene
                     meshToHide.layerMask = 0x00000000;
                 }
             }
-            
+
             // Set each world mesh to reflect off the mirrors.
             if (worldTask)
             {

@@ -4,9 +4,19 @@
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
  */
 
+ // BoneDictionary imports.
+ import { BoneDictionary, Side } from "./boneDictionary";
+
+ // CalibrationAnimationDictionary imports.
+ import { CalibrationAnimationDictionary } from "./CalibrationAnimationDictionary";
+
+// export them for later use as well in the scene files.
+ export { BoneDictionary, Side, CalibrationAnimationDictionary };
+
 // Babylon imports.
 import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture"
 import { BoneIKController } from "@babylonjs/core/Bones/boneIKController"
+import { KeyboardEventTypes, KeyboardInfo } from "@babylonjs/core/Events/keyboardEvents";
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { Mesh } from "@babylonjs/core/Meshes/mesh"
 import { MeshAssetTask, SmartArray } from "@babylonjs/core";
@@ -23,29 +33,20 @@ import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
 // Side effects.
 import { bonesDeclaration } from "@babylonjs/core/Shaders/ShadersInclude/bonesDeclaration";
 
-// Unused imports.
-// import { Angle, Color3, Quaternion, Space, Vector3 } from "@babylonjs/core/Maths/math";
-// import { AssetsManager, BoneAxesViewer, DebugLayer, MeshAssetTask, SmartArray } from "@babylonjs/core";
-// import { Engine } from "@babylonjs/core/Engines/engine";
-// import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
-// import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
-// import { MirrorTexture } from "@babylonjs/core/Materials/Textures/mirrorTexture"
-// import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial"
-// import { Plane } from "@babylonjs/core/Maths/math.plane"
-// import { StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
-// import { Texture } from "@babylonjs/core/Materials/Textures/texture"
-// import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
+const DEBUG: boolean = true;
 
+// Calibration procedure states.
 enum CalibrationMode
 {
     startCal,
-    height,     /* Straight Up      */
-    armSpan,    /* T-Pose           */
-    shoulderTouch,    /* Touch Shoulders  */
+    height,  // Straight up
+    armSpan,  // T-Pose
+    shoulderTouch,  // Hands-to-shoulders
     finish,
     hide
 }
 
+// Avatar measurement types.
 enum AvatarMeasurements
 {
     leftArm,
@@ -64,19 +65,37 @@ enum AvatarMeasurements
 
 export class IKAvatar
 {
+    // The scene this IKAvatar is a part of.
     private scene: Scene;
 
-    private calibrationAvatarTask: MeshAssetTask | null;
-    private userAvatarTask: MeshAssetTask | null;
+    // Tasks for loading the calibration and user avatars.
+    private calibrationAvatarTask: MeshAssetTask | null = null;
+    private calibrationAvatarBoneDictionary: BoneDictionary | null = null;
+    private calibrationAnimationDictionary: CalibrationAnimationDictionary | null = null;
+    private calibrationAvatarRoot: TransformNode | null = null;
 
-    private xrCamera: WebXRCamera | null;
-    private leftController: WebXRInputSource | null;
-    private rightController: WebXRInputSource | null;
+    private userAvatarTask: MeshAssetTask | null = null;
+    private userAvatarBoneDictionary: BoneDictionary | null = null;
+    private userAvatarRoot: TransformNode | null = null;
 
+    // XR related references.
+    private xrCamera: WebXRCamera | null = null;
+    private leftController: WebXRInputSource | null = null;
+    private rightController: WebXRInputSource | null = null;
+
+    // TransformNodes that mirror the above XR references, but always exist.
+    // When the XR reference is null, the node is disabled.
+    private xrCameraRef: TransformNode;
+    private leftControllerRef: TransformNode;
+    private rightControllerRef: TransformNode;
+
+    // Calibration references.
     private calibrationMode: CalibrationMode;
-
+    private calibrationPlane : Mesh | null = null;
+    private calibrationTextBlock: TextBlock;
     private avatarMeasurements: Array<number>;
-    private staticText: TextBlock;
+
+    // IK references.
     private targetRight: Mesh;
     private targetLeft: Mesh;
 
@@ -98,15 +117,21 @@ export class IKAvatar
     {
         this.scene = scene;
 
-        this.calibrationAvatarTask = null;
-        this.userAvatarTask = null;
+        this.xrCameraRef = new TransformNode("xrCameraRef", this.scene);
+        this.xrCameraRef.setEnabled(false);
 
-        this.xrCamera = null;
-        this.leftController = null;
-        this.rightController = null;
+        this.leftControllerRef = new TransformNode("leftControllerRef", this.scene);
+        this.leftControllerRef.setEnabled(false);
 
+        this.rightControllerRef = new TransformNode("rightControllerRef", this.scene);
+        this.rightControllerRef.setEnabled(false);
+
+        // Set the initial calibration state.
         this.calibrationMode = CalibrationMode.hide;
-        this.avatarMeasurements = [     //Index into based on the Avatar Measurement enum
+
+        // Index into based on the Avatar Measurement enum
+        this.avatarMeasurements =
+        [
             AvatarMeasurements.leftArm,
             AvatarMeasurements.leftForeArm,
             AvatarMeasurements.leftUpperArm,
@@ -114,9 +139,10 @@ export class IKAvatar
             AvatarMeasurements.rightForeArm,
             AvatarMeasurements.rightUpperArm,
             AvatarMeasurements.height,
-            AvatarMeasurements.hipHeight];
+            AvatarMeasurements.hipHeight
+        ];
 
-        this.staticText = new TextBlock();
+        this.calibrationTextBlock = new TextBlock();
 
         this.targetRight = MeshBuilder.CreateSphere("Right Target", { diameter: 0.1 }, this.scene);
         this.targetLeft  = MeshBuilder.CreateSphere("Left Target",  { diameter: 0.1 }, this.scene);
@@ -143,67 +169,176 @@ export class IKAvatar
         this.poleTargetTrans = new TransformNode("pole Target Tran", this.scene );
     }
 
-    public registerXRHelper(xrHelper: WebXRDefaultExperience) : void
-    {
-        this.xrCamera = xrHelper.baseExperience.camera;
 
-        // Assigns the controllers
-        xrHelper.input.onControllerAddedObservable.add((inputSource) =>
+
+    // --------------- //
+    // SETUP FUNCTIONS //
+    // --------------- //
+
+    // Registers the XR experience with this IKAvatar instance.
+    public registerXRExperience(xrExperience: WebXRDefaultExperience) : void
+    {
+        this.xrCamera = xrExperience.baseExperience.camera;
+
+        this.xrCameraRef.setEnabled(true);
+        this.xrCameraRef.setParent(this.xrCamera);
+        this.xrCameraRef.position = Vector3.Zero();
+        this.xrCameraRef.rotation = Vector3.Zero();
+        this.xrCameraRef.scaling = Vector3.One();
+
+        // Assign the controllers.
+        xrExperience.input.onControllerAddedObservable.add((inputSource) =>
         {
-            if(inputSource.uniqueId.endsWith("left"))
+            if (inputSource.uniqueId.endsWith("left"))
             {
                 this.leftController = inputSource;
-                if( inputSource.grip != null )
+                if (inputSource.grip != null)
                 {
-                    this.targetLeft.parent = inputSource.grip;
+                    this.targetLeft.setParent(inputSource.grip);
                     this.targetLeft.setEnabled(false);
                 }
+
+                this.leftControllerRef.setEnabled(true);
+                this.leftControllerRef.setParent(inputSource!.pointer);
+                this.leftControllerRef.position = Vector3.Zero();
+                this.leftControllerRef.rotation = Vector3.Zero();
+                this.leftControllerRef.scaling = Vector3.One();
             }
             else
             {
                 this.rightController = inputSource;
-                if( inputSource.grip != null )
+                if (inputSource.grip != null)
                 {
-                    this.targetRight.parent = inputSource.grip;
+                    this.targetRight.setParent(inputSource.grip);
                     this.targetRight.setEnabled(false);
                 }
+
+                this.rightControllerRef.setEnabled(true);
+                this.rightControllerRef.setParent(inputSource!.pointer);
+                this.rightControllerRef.position = Vector3.Zero();
+                this.rightControllerRef.rotation = Vector3.Zero();
+                this.rightControllerRef.scaling = Vector3.One();
             }
         });
 
-        xrHelper.input.onControllerRemovedObservable.add((inputSource) =>
+        // Remove the controllers.
+        xrExperience.input.onControllerRemovedObservable.add((inputSource) =>
         {
-            if(inputSource.uniqueId.endsWith("left"))
+            if (inputSource.uniqueId.endsWith("left"))
             {
-                this.targetLeft.parent = null;
+                this.targetLeft.setParent(null);
                 this.targetLeft.setEnabled(true);
+
+                this.leftControllerRef.setParent(null);
+                this.leftControllerRef.setEnabled(false);
             }
             else
             {
-                this.targetRight.parent = null;
+                this.targetRight.setParent(null);
                 this.targetRight.setEnabled(true);
+
+                this.rightControllerRef.setParent(null);
+                this.rightControllerRef.setEnabled(false);
             }
         });
-
-        // Setup a default calibration for the user limb lengths
-        this.defaultCal( xrHelper.baseExperience.camera.position.y, xrHelper.baseExperience.camera.position.y);
     }
 
-    public registerCalibrationAvatarFromMeshTask(task : MeshAssetTask ) : void
+    // Registers the calibration guide avatar with default transform.
+    public registerCalibrationAvatarFromMeshTaskWithDefaults(
+        task: MeshAssetTask,
+        boneDictionary: BoneDictionary,
+        animationDictionary: CalibrationAnimationDictionary) : void
     {
+        this.registerCalibrationAvatarFromMeshTask(task, boneDictionary, animationDictionary,
+            new Vector3(0, 0, 0), new Vector3(0, 0, 0), Vector3.One());
+    }
+
+    // Registers the calibration guide avatar with the IKAvatar instance.
+    public registerCalibrationAvatarFromMeshTask(
+        task : MeshAssetTask,
+        boneDictionary: BoneDictionary,
+        animationDictionary: CalibrationAnimationDictionary,
+        position: Vector3,
+        rotation: Vector3,
+        scaling: Vector3) : void
+    {
+        if (DEBUG)
+        {
+            console.log("DEBUG - registerCalibrationAvatarFromMeshTask()");
+            console.log(task);
+        }
+
+        if (task.loadedSkeletons.length != 1)
+        {
+            console.error("IKAvatar.registerCalibrationAvatarFromMeshTask() failed. Expected exactly 1 loaded skeleton in task.");
+            return;
+        }
+
+        if (!animationDictionary.skeletonContainsAnimations(task.loadedSkeletons[0]))
+        {
+            console.error("IKAvatar.registerCalibrationAvatarFromMeshTask() failed. The skeleton is missing animation ranges defined in the animation dictionary.");
+            return;
+        }
+
         this.calibrationAvatarTask = task;
+        this.calibrationAvatarBoneDictionary = boneDictionary;
+        this.calibrationAnimationDictionary = animationDictionary;
 
-        task.loadedMeshes[0].name     = "calVatar";
-        task.loadedMeshes[0].scaling  = new Vector3( 0.1, 0.1, 0.1 );
-        task.loadedMeshes[0].position = new Vector3( 0, 0, 2 );
-        task.loadedMeshes[0].setEnabled(false);
+        // Create a root object and parent all the children to it.
+        this.calibrationAvatarRoot = new TransformNode("calibrationAvatarRoot");
+        for (let mesh of task.loadedMeshes)
+        {
+            mesh.setParent(this.calibrationAvatarRoot);
+        }
+
+        // Set its position and scale.
+        this.calibrationAvatarRoot.position = position;
+        this.calibrationAvatarRoot.rotation = rotation;
+        this.calibrationAvatarRoot.scaling = scaling;
+
+        // Disable it initially.
+        this.calibrationAvatarRoot.setEnabled(false);
     }
 
-    public registerUserAvatarFromMeshTask(task : MeshAssetTask ) : void
+    // Registers the user avatar with default transform.
+    public registerUserAvatarFromMeshTaskWithDefaults(task: MeshAssetTask, boneDictionary: BoneDictionary) : void
     {
-        this.userAvatarTask = task;
+        this.registerUserAvatarFromMeshTask(task, boneDictionary, new Vector3(0, 0, 5), new Vector3(0, -3.1415926536, 0), Vector3.One());
+    }
 
+    // Registers the user avatar with the IKAvatar instance.
+    public registerUserAvatarFromMeshTask(task : MeshAssetTask, boneDictionary: BoneDictionary, position: Vector3, rotation: Vector3, scaling: Vector3) : void
+    {
+        if (DEBUG)
+        {
+            console.log("DEBUG - registerUserAvatarFromMeshTask()");
+            console.log(task);
+        }
+
+        this.userAvatarTask = task;
+        this.userAvatarBoneDictionary = boneDictionary;
+
+        // Create a root object and parent all the children to it.
+        this.userAvatarRoot = new TransformNode("userAvatarRoot");
+        for (let mesh of task.loadedMeshes)
+        {
+            mesh.setParent(this.userAvatarRoot);
+        }
+
+        // Set its position and scale.
+        this.userAvatarRoot.position = position;
+        this.userAvatarRoot.rotation = rotation;
+        this.userAvatarRoot.scaling = scaling;
+
+        // Disable it initially.
+        this.userAvatarRoot.setEnabled(false);
+
+        // TODO: fix this.
+
+        /*
+        // this.userAvatarTask.loadedMeshes[0].setEnabled(false);
         // Create a task for each asset you want to load
-        var poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
+        let poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
 
         task.loadedMeshes[0].name     = "user";
         task.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
@@ -211,14 +346,15 @@ export class IKAvatar
         task.loadedMeshes[0].setParent(this.headsetPosTrans);
 
         task.loadedSkeletons[0].name = "userSkel"
-        var mesh     = task.loadedMeshes[0];
-        var skeleton = task.loadedSkeletons[0];
+        let mesh     = task.loadedMeshes[0];
+        let skeleton = task.loadedSkeletons[0];
 
         poleTarget.position.x       = 0;
         poleTarget.position.y       = 1.3;
         poleTarget.position.z       = -10;
-        this.poleTargetTrans.parent = mesh;
+        this.poleTargetTrans.setParent(mesh);
         poleTarget.parent           = this.poleTargetTrans;
+        */
 
         // IDX should potential be ForeArm
         // var lBoneIdx = skeleton.getBoneIndexByName("LeftForeArm");
@@ -237,7 +373,7 @@ export class IKAvatar
 
         // register event to update ik model before every frame
         // GLB models needs the transform nodes updated in addition to the skeleton
-        this.scene.registerBeforeRender(function () {
+        // this.scene.registerBeforeRender(function () {
             // ikCtlRight.update();
             // ikCtlLeft.update();
             // //update Mesh Nodes ONLY NEEDED WITH .GLB files
@@ -257,73 +393,138 @@ export class IKAvatar
             //     rForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].position;
             //     rForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].rotationQuaternion;
             // }
-        });
-
-        task.loadedMeshes[0].rotation = this.bfActual;
+        // });
+        // task.loadedMeshes[0].rotation = this.bfActual;
     }
 
-    public onAssetsLoaded() : void
+    // Completes initialization of the IKAvatar instance.
+    public initialize() : void
     {
-        // TODO
-        // Assert registerCalibrationAvatarFromMeshTask has been called.
-        if (!this.calibrationAvatarTask)
+        if (!this.xrCamera)
         {
-            console.error('IKAvatar.registerCalibrationAvatarFromMeshTask not called.');
+            console.error('IKAvatar.xrCamera is null. Perhaps you forgot to call IKAvatar.registerXRExperience() before IKAvatar.initialize()?');
             return;
         }
 
-        // Setup the calibration text.
-        this.setupCalibrationText();
+        if (!this.calibrationAvatarTask || !this.calibrationAvatarBoneDictionary)
+        {
+            let which: string = !this.calibrationAvatarTask ? "IKAvatar.calibrationAvatarTask" : "IKAvatar.calibrationAvatarBoneDictionary";
+            console.error(which + " is null. Perhaps you forgot to call IKAvatar.registerCalibrationAvatarFromMeshTask() before IKAvatar.initialize()?");
+            return;
+        }
 
-        // Get the Bone Lengths for the ready player me skeleton
+        if (!this.userAvatarTask || !this.userAvatarBoneDictionary)
+        {
+            let which: string = !this.userAvatarTask ? "IKAvatar.userAvatarTask" : "IKAvatar.userAvatarBoneDictionary";
+            console.error(which + " is null. Perhaps you forgot to call IKAvatar.registerUserAvatarFromMeshTask() before IKAvatar.initialize()?");
+            return;
+        }
+
+
+        // Setup a default calibration for the user limb lengths.
+        // Most humans arm-span is identical to their height.
+        this.resetAvatarMeasurements(this.xrCamera.realWorldHeight,  this.xrCamera.realWorldHeight);
+
+        // TODO: expose the options available for GUI positioning to the user somehow.
+        this.setupCalibrationUIWithDefaults();
+
+        // TODO: what is this for???
         this.getBoneLengths();
+
+        if (DEBUG)
+        {
+            this.scene.onKeyboardObservable.add((kbInfo: KeyboardInfo) =>
+            {
+                // A key
+                if (kbInfo.type == KeyboardEventTypes.KEYUP && kbInfo.event.keyCode == 65)
+                {
+                    this.advanceCalibrationProcedure();
+                }
+
+                // B key
+                if (kbInfo.type == KeyboardEventTypes.KEYUP && kbInfo.event.keyCode == 66)
+                {
+                    this.cancelCalibrationProcedure();
+                }
+            });
+        }
     }
 
-    private setupCalibrationText() : void
+    // Sets up the GUI with a default transform.
+    private setupCalibrationUIWithDefaults() : void
     {
-        // TODO
-
-
-        // Setup Calibration Text with this avatar
-        // Create a plane for a text block
-        var staticTextPlane            = MeshBuilder.CreatePlane("textPlane", {width: 15, height: 5}, this.scene);
-            staticTextPlane.position   = new Vector3(0, 27, 0);
-            staticTextPlane.rotation   = new Vector3(0, Math.PI, 0);
-            staticTextPlane.isPickable = false;
-            staticTextPlane.parent     = this.calibrationAvatarTask!.loadedMeshes[0];
-
-        // Create a dynamic texture for the text block
-        var staticTextTexture            = AdvancedDynamicTexture.CreateForMesh(staticTextPlane, 1500, 500);
-            staticTextTexture.background = "#E3E0F1";
-
-        // Create a static text block
-        this.staticText                         = new TextBlock();
-        this.staticText.text                    = "Follow These Prompts";
-        this.staticText.color                   = "black";
-        this.staticText.fontSize                = 62;
-        this.staticText.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
-        this.staticText.textVerticalAlignment   = TextBlock.VERTICAL_ALIGNMENT_TOP;
-
-        staticTextTexture.addControl(this.staticText);
+        this.setupCalibrationUI(new Vector3(0, 1, 2), new Vector3(0, 0, 0), new Vector3(0.8, 0.4, 1.0), this.calibrationAvatarRoot);
     }
 
-    // Calibration Procedures
-
-    private defaultCal( height: number, armSpan: number)
+    // Sets up the GUI with a specified transform and parent.
+    private setupCalibrationUI(position: Vector3, rotation: Vector3, scaling: Vector3, parent: TransformNode|null) : void
     {
-        var arm       = (armSpan / 2.0);
-        var foreArm   = (arm / 2.0);
-        var upperArm  = (arm / 2.0);
-        var hipHeight = (height / 2.0);
+        this.calibrationPlane = MeshBuilder.CreatePlane("guiPlane", {
+            width: 1,
+            height: 1
+        }, this.scene);
 
-        this.avatarMeasurements[AvatarMeasurements.leftArm]        = arm;
-        this.avatarMeasurements[AvatarMeasurements.leftForeArm ]   = foreArm;
-        this.avatarMeasurements[AvatarMeasurements.leftUpperArm ]  = upperArm;
-        this.avatarMeasurements[AvatarMeasurements.rightArm]       = arm;
-        this.avatarMeasurements[AvatarMeasurements.rightForeArm ]  = foreArm;
+        this.calibrationPlane.position = position;
+        this.calibrationPlane.rotation = rotation;
+        this.calibrationPlane.scaling = scaling;
+        this.calibrationPlane.setParent(parent);
+        this.calibrationPlane.isPickable = false;
+
+        const RES: number = 2048;
+        const ASPECT: number = scaling.x/scaling.y;
+
+        let texture = AdvancedDynamicTexture.CreateForMesh(this.calibrationPlane, RES, RES/ASPECT);
+        texture.background = "#000000";
+
+        this.calibrationTextBlock = new TextBlock();
+        this.calibrationTextBlock.text = "Follow These Prompts";
+        this.calibrationTextBlock.color = "white";
+        this.calibrationTextBlock.fontSize = 48;
+        this.calibrationTextBlock.textHorizontalAlignment = TextBlock.HORIZONTAL_ALIGNMENT_CENTER;
+        this.calibrationTextBlock.textVerticalAlignment = TextBlock.VERTICAL_ALIGNMENT_CENTER;
+
+        texture.addControl(this.calibrationTextBlock);
+
+        // Hide the UI initially.
+        this.calibrationPlane.setEnabled(false);
+    }
+
+    // Poll for input and user locomotion.
+    public update() : void
+    {
+        // Polling for controller input
+        this.processControllerInput();
+
+        // Polling for user forward direction
+        this.processUserForward();
+
+        // Procer users position and head rotation
+        this.processUserPosRot();
+    }
+
+
+
+    // --------------------- //
+    // MEASUREMENT FUNCTIONS //
+    // --------------------- //
+
+    private resetAvatarMeasurements(height: number, armSpan: number) : void
+    {
+        let arm = (armSpan / 2.0);
+        let foreArm = (arm / 2.0);
+        let upperArm = (arm / 2.0);
+        let hipHeight = (height / 2.0);
+
+        this.avatarMeasurements[AvatarMeasurements.leftArm] = arm;
+        this.avatarMeasurements[AvatarMeasurements.leftForeArm ] = foreArm;
+        this.avatarMeasurements[AvatarMeasurements.leftUpperArm ] = upperArm;
+
+        this.avatarMeasurements[AvatarMeasurements.rightArm] = arm;
+        this.avatarMeasurements[AvatarMeasurements.rightForeArm ] = foreArm;
         this.avatarMeasurements[AvatarMeasurements.rightUpperArm ] = upperArm;
-        this.avatarMeasurements[AvatarMeasurements.height ]        = height;
-        this.avatarMeasurements[AvatarMeasurements.hipHeight ]     = hipHeight;
+
+        this.avatarMeasurements[AvatarMeasurements.height ] = height;
+        this.avatarMeasurements[AvatarMeasurements.hipHeight ] = hipHeight;
     }
 
     private recordArmSpan()
@@ -426,17 +627,78 @@ export class IKAvatar
         }
     }
 
-    public update() : void
+    // Get the User Avatar Bone Lengths
+    // This only works for a single readyplayer me full body avatar right now
+    private getBoneLengths()
     {
-        // Polling for controller input
-        this.processControllerInput();
+        if (!this.userAvatarTask || !this.userAvatarBoneDictionary)
+        {
+            console.error("IKAvatar.getBoneLengths().");
+            return;
+        }
+        else
+        {
+            const userSkeleton = this.userAvatarTask!.loadedSkeletons[0];
 
-        // Polling for user forward direction
-        this.processUserForward();
+            const rArmBone     = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getArmName(Side.RIGHT))];
+            const rForeArmBone = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getForeArmName(Side.RIGHT))];
+            const rHandBone    = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getHandName(Side.RIGHT))];
+            const rIndexBone   = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getIndexName(Side.RIGHT))];
 
-        // Procer users position and head rotation
-        this.processUserPosRot();
+            const lArmBone     = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getArmName(Side.LEFT))];
+            const lForeArmBone = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getForeArmName(Side.LEFT))];
+            const lHandBone    = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getHandName(Side.LEFT))];
+            const lIndexBone   = userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getIndexName(Side.LEFT))];
+
+            const bones = [rArmBone, rForeArmBone, rHandBone, rIndexBone, lArmBone, lForeArmBone, lHandBone, lIndexBone];
+            for (let bone of bones)
+            {
+                if (!bone)
+                {
+                    console.error("IKAvatar.getBoneLengths() failed. Perhaps the provided BoneDictionary contains the wrong name?");
+                    return;
+                }
+            }
+
+            const rArmLength     = Vector3.Distance(rArmBone.getAbsolutePosition(),     rForeArmBone.getAbsolutePosition());
+            const rForeArmLength = Vector3.Distance(rForeArmBone.getAbsolutePosition(), rHandBone.getAbsolutePosition());
+            const rHandLength    = Vector3.Distance(rHandBone.getAbsolutePosition(),    rIndexBone.getAbsolutePosition());
+
+            const lArmLength     = Vector3.Distance(lArmBone.getAbsolutePosition(),     lForeArmBone.getAbsolutePosition());
+            const lForeArmLength = Vector3.Distance(lForeArmBone.getAbsolutePosition(), lHandBone.getAbsolutePosition());
+            const lHandLength    = Vector3.Distance(lHandBone.getAbsolutePosition(),    lIndexBone.getAbsolutePosition());
+
+            if (DEBUG)
+            {
+                console.log("DEBUG - IKAvatar.getBoneLengths()");
+                console.log('Right Arm Length = ' + rArmLength);
+                console.log('Right ForeArm Length = ' + rForeArmLength);
+                console.log('Right Hand Length = ' + rHandLength);
+
+                console.log('Left Arm Length = ' + lArmLength);
+                console.log('Left ForeArm Length = ' + lForeArmLength);
+                console.log('Left Hand Length = ' + lHandLength);
+            }
+
+            // Store lengths to bones.
+            rArmBone.length = rArmLength;
+            rForeArmBone.length = rForeArmLength;
+            rHandBone.length = rHandLength;
+
+            lArmBone.length = lArmLength;
+            lForeArmBone.length = lForeArmLength;
+            lHandBone.length = lHandLength;
+
+            // For verifying that setting the bones also updates the array.
+            // console.log(userSkeleton.bones[userSkeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getArmName(Side.RIGHT))].length - rArmBone.length);
+        }
     }
+
+
+
+    // --------------- //
+    // INPUT FUNCTIONS //
+    // --------------- //
 
     // Process event handlers for controller input
     private processControllerInput()
@@ -446,159 +708,238 @@ export class IKAvatar
     }
 
     // Toggle for Avatar Animations in Calibration
-    private onRightA(component?: WebXRControllerComponent)
+    private onRightA(component?: WebXRControllerComponent) : void
     {
         var calVatar = this.scene.getMeshByName("calVatar");
         if( calVatar )
         {
-            // Get for later user
-            const idleAnim = this.scene.getAnimationGroupByName("Idle");
             // Increment calibration to the next step
             if(component?.changes.pressed?.current)
             {
-                if(this.calibrationMode == CalibrationMode.hide)
-                {
-                    this.calibrationMode = 0;
-                }
-                else
-                {
-                    this.calibrationMode += 1;
-                }
-
-                switch( this.calibrationMode )
-                {
-
-                case CalibrationMode.startCal:
-                    // Show Calibration Avatar
-                    calVatar.setEnabled(true);
-
-                    // Initial Animation of Calibration Avatar Vibing
-                    //  waiting for calibration to begin
-                    if( idleAnim )
-                    {
-                        idleAnim.start(false, 1.0, idleAnim.from, idleAnim.to, true);
-                    }
-                    // Instruct User to follow the avatar's poses
-                    // Instruct User to press A to continue
-                    // Instruct User to press B to exit at anytime
-                    // Instruct user to use both controllers for correct cal.
-                    this.staticText.fontSize = 62;
-                    this.staticText.text     = "Calibration Process Initiated:\n" +
-                    "I will walk you through the process, just match my\n" +
-                    "poses. When the poses are similiar, press the\n" +
-                    "a-button to go to the next pose. Press the b-button\n" +
-                    "to cancel the calibration process\n" +
-                    "When you are ready to start, press the a-button.";
-                    break;
-
-                case CalibrationMode.height:
-
-                    // Animate Avatar to standing upright with arms at its side
-                    // Need to change this animation to above description
-                    if( idleAnim )
-                    {
-                        idleAnim.stop();
-                    }
-                    const walkBackAnim = this.scene.getAnimationGroupByName("WalkingBack");
-                    if( walkBackAnim )
-                    {
-                        walkBackAnim.start(false, 1.0, walkBackAnim.from, walkBackAnim.to, true);
-                    }
-
-                    // Inform User to press A after matching pose or press b to cancel
-                    this.staticText.fontSize = 124;
-                    this.staticText.text     = "User Height (1/3)\n Press a when you have\n matched my pose.";
-                    break;
-
-                case CalibrationMode.armSpan:
-                    // Record Users height/(possibly hip height)
-                    this.recordHeight();
-                    // Animate Character to first pose
-                    // Just used a default animation for now this will need to be changed to the T-Pose
-                    // when it is made in Mixamo
-                    if( idleAnim )
-                    {
-                        idleAnim.stop();
-                    }
-                    // TODO:
-                    // Change animation from walking to T-pose
-                    const walkAnim = this.scene.getAnimationGroupByName("Walking");
-                    if( walkAnim )
-                    {
-                        walkAnim.start(false, 1.0, walkAnim.from, walkAnim.to, true);
-                    }
-
-                    // Inform User to press A after matching pose or press B to cancel calibration
-                    // Display on top of calVatar ( T-Pose 2/3 )
-                    this.staticText.text = "T-Pose (2/3)\n Press a when you have\n matched my pose.";
-                    break;
-
-                case CalibrationMode.shoulderTouch:
-                    // Store users armspan based on controller distance apart
-                    this.recordArmSpan();
-
-                    // Stop idle animation if it was still going
-                    if( idleAnim )
-                    {
-                        idleAnim.stop();
-                    }
-                    // Update Calibration avatar to the next pose (Hands on shoulders)
-                    // Need to change this animation from samba to ^^^^
-                    const sambaAnim = this.scene.getAnimationGroupByName("Samba");
-                    if( sambaAnim )
-                    {
-                        sambaAnim.start(false, 1.0, sambaAnim.from, sambaAnim.to, true);
-                    }
-
-                    // Inform User to press A after matching pose or press be to cancel (below calVatar)
-                    this.staticText.text = "Touch your Shoulders (2/3)\n Press a when you have\n matched my pose.";
-                    break;
-
-                case CalibrationMode.finish:
-                    // Store arm bone lengths from prev poses
-                    this.recordArmBones();
-
-                    // Inform Calibration Complete
-                    this.staticText.text = "Calibration completed\nsuccesfully.\n Press a to escape."
-                    // Possibly animation complete dance by calVatar
-                    const completeAnim = this.scene.getAnimationGroupByName("Samba")
-                    if( completeAnim )
-                    {
-                        completeAnim.start(false, 1.3, completeAnim.from, completeAnim.to, true);
-                    }
-                    break;
-
-                case CalibrationMode.hide:
-                    // Hide calVatar
-                    calVatar.setEnabled(false);
-                    break;
-
-                default:
-                    /* Only Reached an error conditions */
-                    this.calibrationMode = CalibrationMode.hide;
-                    calVatar.setEnabled(false);
-                    break;
-                }
+                this.advanceCalibrationProcedure();
             }
         }
     }
+
     // Toggle to cancel avatar calibrations
-    private onRightB(component?: WebXRControllerComponent)
+    private onRightB(component?: WebXRControllerComponent) : void
     {
         if(component?.changes.pressed?.current)
         {
-            if( this.calibrationMode != CalibrationMode.hide )
-            {
-                this.calibrationMode = CalibrationMode.hide;
-                // Hide Calibration Avatar
-                var calVatar = this.scene.getMeshByName("calVatar");
-                if( calVatar )
-                {
-                    calVatar.setEnabled(false);
-                }
-            }
+            this.cancelCalibrationProcedure();
         }
     }
+
+    // ---------------------- //
+    // CALIBRATION PROCEDURES //
+    // ---------------------- //
+
+    private advanceCalibrationProcedure() : void
+    {
+
+        if (this.calibrationMode == CalibrationMode.hide)
+        {
+            this.calibrationMode = 0;
+        }
+        else
+        {
+            this.calibrationMode += 1;
+        }
+
+        if (this.calibrationMode == CalibrationMode.startCal)
+        {
+            this.calibrationProcedureStart();
+        }
+        else if (this.calibrationMode == CalibrationMode.height)
+        {
+            this.calibrationProcedureRecordHeight();
+        }
+        else if (this.calibrationMode == CalibrationMode.armSpan)
+        {
+            this.calibrationProcedureRecordArmSpan();
+        }
+        else if (this.calibrationMode == CalibrationMode.shoulderTouch)
+        {
+            this.calibrationProcedureRecordShoulders();
+        }
+        else if (this.calibrationMode == CalibrationMode.finish)
+        {
+            this.calibrationProcedureFinish();
+        }
+        else if (this.calibrationMode == CalibrationMode.hide)
+        {
+            this.cancelCalibrationProcedure();
+        }
+    }
+
+    private cancelCalibrationProcedure() : void
+    {
+        this.calibrationMode = CalibrationMode.hide;
+        this.calibrationAvatarRoot?.setEnabled(false);
+        this.calibrationPlane?.setEnabled(false);
+    }
+
+    private calibrationProcedureStart() : void
+    {
+        // Enable the calibration avatar and GUI.
+        this.calibrationAvatarRoot?.setEnabled(true);
+        this.calibrationPlane?.setEnabled(true);
+
+        // Switch to the idle animation.
+        {
+            const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
+            if (!skeleton)
+            {
+                console.error("IKAvatar.calibrationProcedureStart() failed. Null skeleton.");
+                return;
+            }
+
+            const range = skeleton!.getAnimationRange(this.calibrationAnimationDictionary!.getIdle());
+            if (!range)
+            {
+                console.error("IKAvatar.calibrationProcedureStart() failed. Null range.");
+                return;
+            }
+
+            this.scene.beginAnimation(skeleton, range.from, range.to, true);
+        }
+
+        // Set the instruction text.
+        this.calibrationTextBlock.fontSize = 78;
+        this.calibrationTextBlock.text =
+            "Let's get calibrated!\n\n" +
+            "Try and match my pose as closely as possible.\n\n" +
+
+            "When you're ready, press\n" +
+            "the A button to get started.\n\n" +
+
+            "You can cancel the calibration\n\n" +
+            "procedure by pressing the B button.";
+    }
+
+    private calibrationProcedureRecordHeight() : void
+    {
+        // Keep the idle animation from the previous state.
+
+        // Inform User to press A after matching pose or press b to cancel
+        this.calibrationTextBlock.fontSize = 112;
+        this.calibrationTextBlock.text =
+            "Stand up tall so I can measure\n" +
+            "your height.\n\n" +
+
+            "Press A once you've matched\n" +
+            "my pose.";
+    }
+
+    private calibrationProcedureRecordArmSpan() : void
+    {
+        // Record the users height from the previous step.
+        this.recordHeight();
+
+        // Switch to the T Pose animation.
+        {
+            const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
+            if (!skeleton)
+            {
+                console.error("IKAvatar.calibrationProcedureRecordArmSpan() failed. Null skeleton.");
+                return;
+            }
+
+            const range = skeleton!.getAnimationRange(this.calibrationAnimationDictionary!.getTPose());
+            if (!range)
+            {
+                console.error("IKAvatar.calibrationProcedureRecordArmSpan() failed. Null range.");
+                return;
+            }
+
+            // NOTE: TODO: there is a bug in the blender exporter for single-frame animations,
+            // so we need to manually set the range as (to, to) rather than (from, to)
+            this.scene.beginAnimation(skeleton, range.to, range.to, false);
+            // this.scene.beginAnimation(skeleton, range.from, range.to, true);
+        }
+
+        // Inform User to press A after matching pose or press B to cancel calibration
+        this.calibrationTextBlock.fontSize = 112;
+        this.calibrationTextBlock.text =
+            "Now stretch your arms out wide\n" +
+            "so I can measure your arm span.\n\n" +
+
+            "Press A once you've matched\n" +
+            "my pose.";
+    }
+
+    private calibrationProcedureRecordShoulders() : void
+    {
+        // Record the users arm span from the previous step.
+        this.recordArmSpan();
+
+        // Switch to the hands-on-shoulders animation.
+        {
+            const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
+            if (!skeleton)
+            {
+                console.error("IKAvatar.calibrationProcedureRecordShoulders() failed. Null skeleton.");
+                return;
+            }
+
+            const range = skeleton!.getAnimationRange(this.calibrationAnimationDictionary!.getHandsOnShoulders());
+            if (!range)
+            {
+                console.error("IKAvatar.calibrationProcedureRecordShoulders() failed. Null range.");
+                return;
+            }
+
+            // NOTE: TODO: there is a bug in the blender exporter for single-frame animations,
+            // so we need to manually set the range as (to, to) rather than (from, to)
+            this.scene.beginAnimation(skeleton, range.to, range.to, false);
+            // this.scene.beginAnimation(skeleton, range.from, range.to, true);
+        }
+
+        this.calibrationTextBlock.fontSize = 96;
+        this.calibrationTextBlock.text =
+            "Place your hands on your shoulders\n" +
+            "so I can measure your forearm length.\n\n" +
+
+            "Press A once you've matched my pose.";
+    }
+
+    private calibrationProcedureFinish() : void
+    {
+        // Record the users arm bone lengths from the previous step.
+        this.recordArmBones();
+
+        // Switch to the finish animation.
+        {
+            const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
+            if (!skeleton)
+            {
+                console.error("IKAvatar.calibrationProcedureFinish() failed. Null skeleton.");
+                return;
+            }
+
+            const range = skeleton!.getAnimationRange(this.calibrationAnimationDictionary!.getFinish());
+            if (!range)
+            {
+                console.error("IKAvatar.calibrationProcedureFinish() failed. Null range.");
+                return;
+            }
+
+            this.scene.beginAnimation(skeleton, range.from, range.to, true);
+        }
+
+        this.calibrationTextBlock.fontSize = 136;
+        this.calibrationTextBlock.text =
+            "Thanks! You're good to go.\n\n" +
+
+            "Press A once more to close\n" +
+            "this window.";
+    }
+
+
+
+    // ------------------------- //
+    // LOCOMOTION / IK FUNCTIONS //
+    // ------------------------- //
 
     // Useful function to compare two vectors based on cordinates
     // Cleaner Way of writing the Vector3.Distance function
@@ -770,7 +1111,6 @@ export class IKAvatar
         }
     }
 
-
     // Process User position and head rotation
     private processUserPosRot()
     {
@@ -797,43 +1137,5 @@ export class IKAvatar
             }
         }
     }
-
-
-    // Get the User Avatar Bone Lengths
-    // This only works for a single readyplayer me full body avatar right now
-    private getBoneLengths()
-    {
-        var userSkel = this.scene.getSkeletonByName("userSkel");
-        if( userSkel )
-        {
-            // Bones Needed
-            // Left  Arm, ForeArm, and Hand
-            // Right Arm, ForeArm, and Hand
-            // Note Ready Player Me inverts left/right because it sets based on looking at face of avatar
-            // Get Index of Bones
-            var rArmId     = userSkel.getBoneIndexByName("LeftArm");
-            var rForeArmId = userSkel.getBoneIndexByName("LeftForeArm");
-            var rHandId    = userSkel.getBoneIndexByName("LeftHand");
-            var lArmId     = userSkel.getBoneIndexByName("RightArm");
-            var lForeArmId = userSkel.getBoneIndexByName("RightForeArm");
-            var lHandId    = userSkel.getBoneIndexByName("RightHand");
-            var lIndexId   = userSkel.getBoneIndexByName("RightHandIndex1");
-
-            // Determine Lengths of bones
-            var rArmLength     = Vector3.Distance( userSkel.bones[rArmId].getAbsolutePosition(), userSkel.bones[rForeArmId].getAbsolutePosition() );
-            var rForeArmLength = Vector3.Distance( userSkel.bones[rForeArmId].getAbsolutePosition(), userSkel.bones[rHandId].getAbsolutePosition() );
-            var lArmLength     = Vector3.Distance( userSkel.bones[lArmId].getAbsolutePosition(), userSkel.bones[lForeArmId].getAbsolutePosition() );
-            var lForeArmLength = Vector3.Distance( userSkel.bones[lForeArmId].getAbsolutePosition(), userSkel.bones[lHandId].getAbsolutePosition() );
-            var lIndexLength   = Vector3.Distance( userSkel.bones[lHandId].getAbsolutePosition(), userSkel.bones[lIndexId].getAbsolutePosition() );
-
-            // Store Lengths to Bones
-            userSkel.bones[rArmId].length     = rArmLength;
-            userSkel.bones[rForeArmId].length = rForeArmLength;
-            userSkel.bones[lArmId].length     = lArmLength;
-            userSkel.bones[lForeArmId].length = lForeArmLength;
-            userSkel.bones[lForeArmId].length = lForeArmLength;
-            userSkel.bones[lHandId].length    = lIndexLength;
-        }
-    }
 }
-// End of Avatar class.
+// End of IKAvatar class.
