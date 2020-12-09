@@ -31,10 +31,8 @@ import "@babylonjs/inspector";
 // This is useful to hide the head mesh, for example, since the XR camera is usually
 // inside the avatars head.
 const hideFromXRCamera = [
-    "EyeLeft",
-    "EyeRight",
-    "Wolf3D_Head",
-    "Wolf3D_Teeth"
+    "Xbot_Head",
+    "Xbot_neck"
 ];
 
 // A basic scene test bed for our IKAvatar class.
@@ -138,7 +136,8 @@ export class BasicScene
                 "mixamorig:LeftArm",
                 "mixamorig:LeftForeArm",
                 "mixamorig:LeftHand",
-                "mixamorig:LeftHandMiddle4"
+                "mixamorig:LeftHandMiddle4",
+                "mixamorig:Head"
             );
             let animationDictionary = new CalibrationAnimationDictionary(
                 "YBot_Idle",
@@ -163,11 +162,12 @@ export class BasicScene
                 "mixamorig:LeftArm",
                 "mixamorig:LeftForeArm",
                 "mixamorig:LeftHand",
-                "mixamorig:LeftHandMiddle4"
+                "mixamorig:LeftHandMiddle4",
+                "mixamorig:Head"
             );
             this.ikAvatar.registerUserAvatarFromMeshTask(task,
-                boneDictionary, new Vector3(0, 0, 0), new Vector3(0, -3.14159, 0),
-                Vector3.One().scale(0.01));
+                boneDictionary, "Xbot_body", "Xbot_body", new Vector3(0, 0, 0), new Vector3(0, -3.14159, 0),
+                Vector3.One().scale(1.0));
         }
 
         let ground = MeshBuilder.CreateGround("Ground", { width:10, height: 10 }, this.scene );

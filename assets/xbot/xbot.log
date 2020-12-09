@@ -12,7 +12,7 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		Texture directory   :  /Users/danielshervheim/Documents/Github/f20-5619/VR-Avatar-IK/assets/xbot/
 	Python World class constructor completed
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
-	processing begun of skeleton:  Xbot, id:  0
+	processing begun of skeleton:  Armature, id:  0
 		processing begun of bone:  mixamorig:Hips, index:  0
 		processing begun of bone:  mixamorig:Spine, index:  1
 		processing begun of bone:  mixamorig:Spine1, index:  2
@@ -80,7 +80,7 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		processing begun of bone:  mixamorig:LeftFoot, index:  64
 		processing begun of bone:  mixamorig:LeftToeBase, index:  65
 		processing begun of bone:  mixamorig:LeftToe_End, index:  66
-		processing action XbotTPose:  in[1 - 2], out[0 - 2]
+		processing action Armature|mixamo.com|Layer0:  in[1 - 2], out[0 - 2]
 	processing begun of mesh:  Xbot_body
 		processing begun of material:  xbot_body
 		Custom split normals with tangents being used
@@ -113,23 +113,6 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 			Highest # of influencers observed:  1, num vertices with this:  13176
 			exported as 1 influencers
 			num skeletonWeights and skeletonIndices:  52704
-	processing begun of mesh:  Xbot_neck
-		processing begun of material:  xbot_joints
-		registered as also a user of material:  xbot_joints
-		Custom split normals with tangents being used
-		num positions      :  476
-		num normals        :  476
-		num tangents       :  1904
-		num uvs            :  952
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  760
-		Skeleton stats:  
-			Total Influencers:  476
-			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  476
-			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  1904
 	processing begun of mesh:  Xbot_Head
 		processing begun of material:  xbot_body
 		registered as also a user of material:  xbot_body
@@ -147,11 +130,28 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 			Highest # of influencers observed:  1, num vertices with this:  1427
 			exported as 1 influencers
 			num skeletonWeights and skeletonIndices:  5708
+	processing begun of mesh:  Xbot_neck
+		processing begun of material:  xbot_joints
+		registered as also a user of material:  xbot_joints
+		Custom split normals with tangents being used
+		num positions      :  476
+		num normals        :  476
+		num tangents       :  1904
+		num uvs            :  952
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  760
+		Skeleton stats:  
+			Total Influencers:  476
+			Avg # of influencers per vertex:  1
+			Highest # of influencers observed:  1, num vertices with this:  476
+			exported as 1 influencers
+			num skeletonWeights and skeletonIndices:  1904
 ========= Writing of JSON file started =========
 	writing mesh:  Xbot_body
 	writing mesh:  Xbot_joints
-	writing mesh:  Xbot_neck
 	writing mesh:  Xbot_Head
+	writing mesh:  Xbot_neck
 ========= Writing of JSON file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 13.0526 secs
+elapsed time:  0 min, 11.7879 secs

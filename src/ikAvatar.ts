@@ -14,8 +14,9 @@
  export { BoneDictionary, Side, CalibrationAnimationDictionary };
 
 // Babylon imports.
-import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture"
-import { BoneIKController } from "@babylonjs/core/Bones/boneIKController"
+import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture";
+import { BoneAxesViewer } from "@babylonjs/core/Debug/boneAxesViewer";
+import { BoneIKController } from "@babylonjs/core/Bones/boneIKController";
 import { KeyboardEventTypes, KeyboardInfo } from "@babylonjs/core/Events/keyboardEvents";
 import { Logger } from "@babylonjs/core/Misc/logger";
 import { Mesh } from "@babylonjs/core/Meshes/mesh"
@@ -77,6 +78,7 @@ export class IKAvatar
     private userAvatarTask: MeshAssetTask | null = null;
     private userAvatarBoneDictionary: BoneDictionary | null = null;
     private userAvatarRoot: TransformNode | null = null;
+    private userAvatarInitialScale: Vector3 = Vector3.One();
 
     // XR related references.
     private xrCamera: WebXRCamera | null = null;
@@ -301,22 +303,49 @@ export class IKAvatar
     }
 
     // Registers the user avatar with default transform.
-    public registerUserAvatarFromMeshTaskWithDefaults(task: MeshAssetTask, boneDictionary: BoneDictionary) : void
+    public registerUserAvatarFromMeshTaskWithDefaults(
+        task: MeshAssetTask,
+        boneDictionary: BoneDictionary,
+        leftArmMeshName: string,
+        rightArmMeshName: string
+    ) : void
     {
-        this.registerUserAvatarFromMeshTask(task, boneDictionary, new Vector3(0, 0, 5), new Vector3(0, -3.1415926536, 0), Vector3.One());
+        this.registerUserAvatarFromMeshTask(
+            task,
+            boneDictionary,
+            leftArmMeshName,
+            rightArmMeshName,
+            new Vector3(0, 0, 5),
+            new Vector3(0, -3.1415926536, 0),
+            Vector3.One()
+        );
     }
 
     // Registers the user avatar with the IKAvatar instance.
-    public registerUserAvatarFromMeshTask(task : MeshAssetTask, boneDictionary: BoneDictionary, position: Vector3, rotation: Vector3, scaling: Vector3) : void
+    public registerUserAvatarFromMeshTask(
+        task : MeshAssetTask,
+        boneDictionary: BoneDictionary,
+        leftArmMeshName: string,
+        rightArmMeshName: string,
+        position: Vector3,
+        rotation: Vector3,
+        scaling: Vector3
+    ) : void
     {
-        if (DEBUG)
+        // Validate loaded mesh and skeleton.
+
+        if (task.loadedSkeletons.length != 1)
         {
-            console.log("DEBUG - registerUserAvatarFromMeshTask()");
-            console.log(task);
+            console.error("ERROR - IKAvatar.registerUserAvatarFromMeshTask failed(). Expected exactly 1 loaded skeleton.");
+            return;
         }
 
-        this.userAvatarTask = task;
-        this.userAvatarBoneDictionary = boneDictionary;
+        const skeleton = task.loadedSkeletons[0];
+        if (!boneDictionary.validateSkeleton(skeleton))
+        {
+            console.error("ERROR - IKAvatar.registerUserAvatarFromMeshTask failed(). Invalid skeleton. Perhaps the bone names in the bone dictionary are wrong?");
+            return;
+        }
 
         // Create a root object and parent all the children to it.
         this.userAvatarRoot = new TransformNode("userAvatarRoot");
@@ -328,73 +357,65 @@ export class IKAvatar
         // Set its position and scale.
         this.userAvatarRoot.position = position;
         this.userAvatarRoot.rotation = rotation;
-        this.userAvatarRoot.scaling = scaling;
+        this.userAvatarInitialScale = scaling;
+        this.userAvatarRoot.scaling = this.userAvatarInitialScale;
+
+        // Look for left and right arm meshes.
+        const leftArms = this.userAvatarRoot.getChildMeshes(false, (mesh)=>mesh.name == leftArmMeshName);
+        const rightArms = this.userAvatarRoot.getChildMeshes(false, (mesh)=>mesh.name == rightArmMeshName);
+
+        if (leftArms.length != 1 || rightArms.length != 1)
+        {
+            console.error("ERROR - IKAvatar.registerUserAvatarFromMeshTask failed(). Invalid skeleton. Perhaps the bone names in the bone dictionary are wrong?");
+            return;
+        }
+        const leftArmMesh = leftArms[0];
+        const rightArmMesh = rightArms[0];
+
+        // Save the task and bone dictionary.
+        this.userAvatarTask = task;
+        this.userAvatarBoneDictionary = boneDictionary;
+
+        if (DEBUG)
+        {
+            console.log("DEBUG - registerUserAvatarFromMeshTask()");
+            console.log(task);
+        }
+
 
         // Disable it initially.
-        this.userAvatarRoot.setEnabled(false);
+        // this.userAvatarRoot.setEnabled(false);
 
         // TODO: fix this.
 
-        /*
-        // this.userAvatarTask.loadedMeshes[0].setEnabled(false);
-        // Create a task for each asset you want to load
         let poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
-
-        task.loadedMeshes[0].name     = "user";
-        task.loadedMeshes[0].position = new Vector3( 0, 0, 0 );
-        task.loadedMeshes[0].scaling  = new Vector3( 1, 1, 1 );
-        task.loadedMeshes[0].setParent(this.headsetPosTrans);
-
-        task.loadedSkeletons[0].name = "userSkel"
-        let mesh     = task.loadedMeshes[0];
-        let skeleton = task.loadedSkeletons[0];
-
         poleTarget.position.x       = 0;
-        poleTarget.position.y       = 1.3;
-        poleTarget.position.z       = -10;
-        this.poleTargetTrans.setParent(mesh);
+        poleTarget.position.y       = 1.6;
+        poleTarget.position.z       = 0;
+        this.poleTargetTrans.setParent(this.userAvatarRoot);
         poleTarget.parent           = this.poleTargetTrans;
-        */
 
-        // IDX should potential be ForeArm
-        // var lBoneIdx = skeleton.getBoneIndexByName("LeftForeArm");
-        // var rBoneIdx = skeleton.getBoneIndexByName("RightForeArm");
-        // Logger.Log("Hands at " + lBoneIdx + " and " + rBoneIdx)
-        // var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
-        // var ikCtlRight = new BoneIKController(mesh, skeleton.bones[lBoneIdx], {targetMesh:this.targetRight, poleTargetMesh:poleTarget, poleAngle: Math.PI});
-        // var ikCtlLeft  = new BoneIKController(mesh, skeleton.bones[rBoneIdx], {targetMesh:this.targetLeft, poleTargetMesh:poleTarget, poleAngle: Math.PI});
 
-        // ikCtlRight.maxAngle = Math.PI * .9;
-        // ikCtlLeft.maxAngle  = Math.PI * .9;
+        const leftArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.LEFT))];
+        const rightArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.RIGHT))];
 
-        // BoneAxesViewer can show axes of each bone when enablesd
-        // var bone1AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[rBoneIdx], <Mesh>mesh);
-        // var bone2AxesViewer = new BoneAxesViewer(this.scene, skeleton.bones[lBoneIdx], <Mesh>mesh);
 
-        // register event to update ik model before every frame
-        // GLB models needs the transform nodes updated in addition to the skeleton
-        // this.scene.registerBeforeRender(function () {
-            // ikCtlRight.update();
-            // ikCtlLeft.update();
-            // //update Mesh Nodes ONLY NEEDED WITH .GLB files
-            // // both arms and forearms
-            // var lArm     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].getTransformNode();
-            // var rArm     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].getTransformNode();
-            // var lForeArm = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].getTransformNode();
-            // var rForeArm = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].getTransformNode();
-            // if( lArm && rArm && lForeArm && rForeArm )
-            // {
-            //     lArm.position               = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].position;
-            //     lArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("LeftArm")].rotationQuaternion;
-            //     rArm.position               = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].position;
-            //     rArm.rotationQuaternion     = skeleton.bones[skeleton.getBoneIndexByName("RightArm")].rotationQuaternion;
-            //     lForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].position;
-            //     lForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("LeftForeArm")].rotationQuaternion;
-            //     rForeArm.position           = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].position;
-            //     rForeArm.rotationQuaternion = skeleton.bones[skeleton.getBoneIndexByName("RightForeArm")].rotationQuaternion;
-            // }
-        // });
-        // task.loadedMeshes[0].rotation = this.bfActual;
+        const leftIKControl = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: poleTarget, poleAngle: Math.PI });
+        const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: poleTarget, poleAngle: Math.PI });
+
+        leftIKControl.maxAngle = Math.PI * 0.9;
+        rightIKControl.maxAngle  = Math.PI * 0.9;
+
+        const bone1AxesViewer = new BoneAxesViewer(this.scene, leftArmBone, <Mesh>leftArmMesh);
+        const bone2AxesViewer = new BoneAxesViewer(this.scene, rightArmBone, <Mesh>rightArmMesh);
+
+        this.scene.registerBeforeRender(()=>
+        {
+            leftIKControl.update();
+            rightIKControl.update();
+            bone1AxesViewer.update();
+            bone2AxesViewer.update();
+        });
     }
 
     // Completes initialization of the IKAvatar instance.
@@ -429,7 +450,7 @@ export class IKAvatar
         this.setupCalibrationUIWithDefaults();
 
         // TODO: what is this for???
-        this.getBoneLengths();
+        // this.getBoneLengths();
 
         if (DEBUG)
         {
@@ -527,23 +548,53 @@ export class IKAvatar
         this.avatarMeasurements[AvatarMeasurements.hipHeight ] = hipHeight;
     }
 
-    private recordArmSpan()
+    private recordArmSpan() : void
     {
-        var armSpan   = 0;
-        var armLength = 0;
-        if( this.rightController?.grip && this.leftController?.grip)
+        if (!this.rightController?.grip || !this.leftController?.grip)
         {
-            // This equation could be made more sophisticated by using the headset position and pythagorean theorem
-            // if this current calculation is not accurate enough.
-            armSpan   = Vector3.Distance(this.rightController.grip?.position, this.leftController.grip?.position);
-            armLength = (armSpan / 2);
-            this.avatarMeasurements[AvatarMeasurements.leftArm]  = armLength;
-            this.avatarMeasurements[AvatarMeasurements.rightArm] = armLength;
+            console.error("IKAvatar.recordArmSpan() failed. Null controller grip(s).");
+            return;
+        }
+
+        // This equation could be made more sophisticated by using the headset
+        // position and pythagorean theorem if this current calculation is not
+        // accurate enough.
+
+        let armSpan = Vector3.Distance(
+            this.rightController.grip!.getAbsolutePosition(),
+            this.leftController.grip!.getAbsolutePosition()
+        );
+
+        // TODO: is this necessary?
+        /*
+        // Multiply by 0.8 to account for the width of the span taken up by
+        // the chest, which is 20% of the overall span (on average).
+        armSpan *= 0.8;
+        */
+
+        let armLength = (armSpan / 2.0);
+
+        this.avatarMeasurements[AvatarMeasurements.leftArm]  = armLength;
+        this.avatarMeasurements[AvatarMeasurements.rightArm] = armLength;
+
+        if (DEBUG)
+        {
+            console.log("DEBUG - IKAvatar.recordArmSpan()");
+            console.log("armLength = " + armLength);
         }
     }
 
-    private recordArmBones()
+    private recordArmBones() : void
     {
+        if (!this.rightController?.grip || !this.leftController?.grip)
+        {
+            console.error("IKAvatar.recordArmBones() failed. Null controller grip(s).");
+            return;
+        }
+
+        // TODO: this.
+
+        /*
         var upperArmLength = 0;
         var foreArmLength  = 0;
         if( this.rightController?.grip && this.leftController?.grip )
@@ -602,31 +653,73 @@ export class IKAvatar
                 lUpperArmTrans?.computeWorldMatrix();
             }
         }
+        */
     }
 
-    private recordHeight()
+    private recordHeight() : void
     {
-        if( this.xrCamera?.realWorldHeight)
+        if (!this.xrCamera)
         {
-            var height = this.xrCamera.realWorldHeight;
-            this.avatarMeasurements[AvatarMeasurements.height]    = height;//this.xrCamera.realWorldHeight;
-            this.avatarMeasurements[AvatarMeasurements.hipHeight] = ( height / 2 );//(this.xrCamera.realWorldHeight / 2);
-            //scale entire user based on their height
-            var user = this.scene.getMeshByName("user");
+            console.error("IKAvatar.recordHeight() failed. Null XRCamera.");
+            return;
+        }
 
-            if( user )
+        if (!this.userAvatarRoot)
+        {
+            console.error("IKAvatar.recordHeight() failed. Null userAvatarRoot.");
+            return;
+        }
+
+        let eyeHeight = this.xrCameraRef.getAbsolutePosition().y;
+        // let eyeHeight = this.xrCamera!.realWorldHeight;
+        let height = eyeHeight/0.93;  // eyeHeight is approx. 93% of total height.
+        let hipHeight = height*0.57;  // Hip height is approx. 57% of total height.
+
+        this.avatarMeasurements[AvatarMeasurements.height] = height;
+        this.avatarMeasurements[AvatarMeasurements.hipHeight] = hipHeight;
+
+        // Measure the avatar meshes current height by computing its Y bounds.
+        let minY: number = 100000;
+        let maxY: number = -100000;
+        for (let mesh of this.userAvatarRoot!.getChildMeshes())
+        {
+            if (mesh.getBoundingInfo().boundingBox.minimumWorld.y < minY)
             {
-                // Scaling Procedure
-                // Default avatar height is 1.725 at the eyes
-                // New Scale = realWorld height / 1.725
-                var scaling = user.scaling.clone();
-                var scaledHeight = this.xrCamera.realWorldHeight / 1.725;
-                user.scaling = new Vector3( scaledHeight, scaledHeight, scaledHeight );
-                Logger.Log("Scaled user height from " + scaling + " to " + user.scaling );
+                minY = mesh.getBoundingInfo().boundingBox.minimumWorld.y;
+            }
+            if (mesh.getBoundingInfo().boundingBox.maximumWorld.y > maxY)
+            {
+                maxY = mesh.getBoundingInfo().boundingBox.maximumWorld.y;
             }
         }
+
+        // Compute the ratio that scales from the current avatar height to the
+        // users recorded height. Also check that its not 0 (this might happen
+        // if the users head is exactly on the floor, so its unlikely. But if it
+        // were to happen, then it would zero out the user avatars scale, and we
+        // would be unable to recover it, so its critical that it doesn't happen).
+        const currentAvatarHeight = maxY - minY;
+        const scalingRatio = height/(1.0*currentAvatarHeight);
+        if (Math.abs(scalingRatio) < 0.00001)
+        {
+            console.error("WARNING - IKAvatar.recordHeight(). Degenerate scaling ratio. Ignoring.");
+            return;
+        }
+
+        if (DEBUG)
+        {
+            console.log("DEBUG - IKAvatar.recordHeight()");
+            console.log("eyeHeight = " + eyeHeight);
+            console.log("height = " + height);
+            console.log("hipHeight = " + hipHeight);
+            console.log("currentAvatarHeight = " + currentAvatarHeight);
+            console.log("scalingRatio = " + scalingRatio);
+        }
+
+        this.userAvatarRoot.scaling.scaleInPlace(scalingRatio);
     }
 
+    // TODO: what is this for?
     // Get the User Avatar Bone Lengths
     // This only works for a single readyplayer me full body avatar right now
     private getBoneLengths()
@@ -710,14 +803,10 @@ export class IKAvatar
     // Toggle for Avatar Animations in Calibration
     private onRightA(component?: WebXRControllerComponent) : void
     {
-        var calVatar = this.scene.getMeshByName("calVatar");
-        if( calVatar )
+        // Increment calibration to the next step
+        if(component?.changes.pressed?.current)
         {
-            // Increment calibration to the next step
-            if(component?.changes.pressed?.current)
-            {
-                this.advanceCalibrationProcedure();
-            }
+            this.advanceCalibrationProcedure();
         }
     }
 
@@ -729,6 +818,8 @@ export class IKAvatar
             this.cancelCalibrationProcedure();
         }
     }
+
+
 
     // ---------------------- //
     // CALIBRATION PROCEDURES //
@@ -952,7 +1043,7 @@ export class IKAvatar
     private processUserForward()
     {
         // Only process if headset and controllers are in the scene
-        if( this.xrCamera && this.rightController && this.leftController && ( this.cacheCounter < 50 )  )
+        if (this.xrCamera && this.rightController && this.leftController && this.cacheCounter < 50 && this.userAvatarTask)
         {
             // Algorithm adapted from Real-time Full-body Motion Reconstruction and Recognition for Off-the-Shelf VR Devices
             // Section 4.3
@@ -1097,40 +1188,39 @@ export class IKAvatar
             this.fP = p;
 
             //Update user position
-            var userSkel = this.scene.getSkeletonByName("userSkel");
-            if( userSkel )
+            let skeleton = this.userAvatarTask.loadedSkeletons[0];
+            if (skeleton)
             {
                 this.poleTargetTrans.rotation = this.bfActual;
-                var mainTrans = userSkel.bones[0].getTransformNode();
-                if( mainTrans )
+                let mainTrans = skeleton.bones[0].getTransformNode();
+                if (mainTrans)
                 {
                     mainTrans.rotationQuaternion = this.bfActual.toQuaternion();
                 }
             }
-
         }
     }
 
     // Process User position and head rotation
     private processUserPosRot()
     {
-        if( this.xrCamera )
+        if (this.xrCamera && this.userAvatarTask && this.userAvatarBoneDictionary)
         {
             // Only Update user position if noticeable change not just looking down
-            if( Vector3.Distance( this.xrCamera.position, this.headsetPosTrans.position ) > 1.60)
+            if (Vector3.Distance(this.xrCamera.position, this.headsetPosTrans.position) > 1.60)
             {
                 this.headsetPosTrans.position = this.xrCamera.position.clone();
                 this.headsetPosTrans.position.y = 0;
             }
             // update user head rotation
-            var userSkel = this.scene.getSkeletonByName("userSkel");
-            if( userSkel )
+            let skeleton = this.userAvatarTask.loadedSkeletons[0];
+            if (skeleton)
             {
-                var rot = this.xrCamera.rotationQuaternion.toEulerAngles();
+                const rot = this.xrCamera.rotationQuaternion.toEulerAngles();
                 // Yaw = z, Pitch = y, Roll = x;
-                var headIdx = userSkel.getBoneIndexByName("Head");
-                var headTrans = userSkel.bones[headIdx].getTransformNode();
-                if( headTrans )
+                const headIdx = skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHeadName());
+                const headTrans = skeleton.bones[headIdx].getTransformNode();
+                if (headTrans)
                 {
                     headTrans.rotationQuaternion = new Vector3( rot.x, rot.y - this.bfActual.y, rot.z).toQuaternion();
                 }

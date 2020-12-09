@@ -5,7 +5,7 @@
  */
 
 import { BasicScene } from "./basicScene";
-// import { StudioScene } from "./studioScene";
+import { StudioScene } from "./studioScene";
 
 // Instantiate a scene.
 let scene = new BasicScene();
