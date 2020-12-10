@@ -4,54 +4,43 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 export abstract class IKSolver
 {
-    protected engine: Engine;
-
-    constructor(engine: Engine)
-    {
-        this.engine = engine;
-    }
-
     // Solves the given IK chain to point it towards the target.
     // @param chain: the joints.
     // @param limits: the joint rotation limits in radians.
     // @param target: the IK goal position in world space.
-    abstract solve(chain: Array<TransformNode>, limits: Array<number>, target: Vector3, iterations: number, speed: number): void;
+    abstract solve(chain: Array<TransformNode>, limits: Array<number>, target: TransformNode, damping: number): void;
 }
 
 // https://zalo.github.io/blog/inverse-kinematics/#ccdik
 export class CCD extends IKSolver
 {
-    solve(chain: Array<TransformNode>, limits: Array<number>, target: Vector3, iterations: number, speed: number): void
+    solve(chain: Array<TransformNode>, limits: Array<number>, target: TransformNode, damping: number): void
     {
-        for (let iter = 0; iter < iterations; iter++)
+        // Note: we start at -2 since we want to skip the last transformNode, since
+        // it forms the end of a joint rather than the base of a joint.
+        for (let i = chain.length-2; i >= 0; i--)
         {
-            for (let i = chain.length-1; i >= 0; i--)
+            // Use the last node in the chain as the end effector.
+            const effector = chain[chain.length-1];
+
+            const directionToEffector = effector.getAbsolutePosition().subtract(chain[i].getAbsolutePosition());
+                  directionToEffector.normalize();
+            const directionToTarget = target.getAbsolutePosition().subtract(chain[i].getAbsolutePosition());
+                  directionToTarget.normalize();
+
+            const axis = Vector3.Cross(directionToEffector, directionToTarget);
+                  axis.normalize();
+            const angle = Math.acos(Vector3.Dot(directionToEffector, directionToTarget));
+
+            // TODO: is this necessary?
+            if (axis.equalsWithEpsilon(Vector3.Zero(), 0.000001))
             {
-
-                let effector = target;
-                if (i < chain.length-1)
-                {
-                    effector = chain[chain.length-1].absolutePosition;
-                }
-
-                const directionToEffector = effector.subtract(chain[i].absolutePosition);
-
-                // const directionToEffector = chain[i].getDirection(Vector3.Forward());
-                const directionToTarget = target.subtract(chain[i].absolutePosition);
-
-                const axis = Vector3.Cross(directionToEffector, directionToTarget); axis.normalize();
-                const angle = Math.acos(Vector3.Dot(Vector3.Normalize(directionToEffector), Vector3.Normalize(directionToTarget)));
-
-                if (axis.equalsWithEpsilon(Vector3.Zero(), 0.000001))
-                {
-                    continue;
-                }
-
-                const dt = this.engine.getDeltaTime() / 1000.0;
-                chain[i].rotate(axis, angle*dt/iterations*speed, Space.WORLD);
-
-                // TODO: incorperate joint limits.
+                continue;
             }
+
+            chain[i].rotate(axis, angle*damping, Space.WORLD);
+
+            // TODO: incorperate joint limits.
         }
     }
 }
@@ -59,63 +48,70 @@ export class CCD extends IKSolver
 // https://www.researchgate.net/publication/257723209_A_Fast_Inverse_Kinematics_Algorithm_for_Joint_Animation
 export class TargetTriangle extends IKSolver
 {
-    solve(chain: Array<TransformNode>, limits: Array<number>, target: Vector3, iterations: number, speed: number): void
+    solve(chain: Array<TransformNode>, limits: Array<number>, target: TransformNode, damping: number): void
     {
-        const dt = this.engine.getDeltaTime() / 1000.0;
-
-        for (let iter = 0; iter < iterations; iter++)
+        for (let i = 0; i < chain.length-1; i++)
         {
-            for (let i = 0; i < chain.length-1; i++)
+            const effector = chain[chain.length-1];
+
+            const jointBase = chain[i].getAbsolutePosition();
+            const jointTip = chain[i+1].getAbsolutePosition();
+
+            // Compute Ve, Vt, Vr, and theta.
+            const ve = effector.getAbsolutePosition().subtract(jointBase);  // end effector for ith link
+            const vt = target.getAbsolutePosition().subtract(jointBase);  // target vector for ith link
+            const vr = Vector3.Normalize(Vector3.Cross(ve, vt));
+            const theta = Math.acos(Vector3.Dot(Vector3.Normalize(ve), Vector3.Normalize(vt)));
+
+            // Compute a, b, c.
+            const a = Vector3.Distance(jointBase, jointTip);  // length of joint we are currently moving
+            let b = 0;  // length of the remaining chain
+            for (let j = i+1; j < chain.length-1; j++)  // TODO: +1 or +0?
             {
-                const effector = chain[chain.length-1].absolutePosition;
+                b += Vector3.Distance(chain[j].getAbsolutePosition(), chain[j+1].getAbsolutePosition());
+            }
+            const c = Vector3.Distance(jointBase, target.getAbsolutePosition());  // distance from target to current joint
 
-                const cur = chain[i];
-                const next = chain[i+1];
-
-                const p = cur.absolutePosition;
-
-                const ve = effector.subtract(p); // end effector for ith link
-                const vt = target.subtract(p);  // target vector for ith link
-                const vr = Vector3.Cross(ve, vt); vr.normalize();
-                const a = Vector3.Distance(cur.absolutePosition, next.absolutePosition);  // length of joint we are currently moving
-                let b = 0;  // length of the remaining chain
-                for (let j = i; j < chain.length-1; j++)
+            // Switch on a case-by-case basis, only rotating if theta is not NaN.
+            // This happens sometimes, and I can't figure it out why...
+            if (c > a+b)
+            {
+                if (!isNaN(theta))
                 {
-                    b += Vector3.Distance(chain[j].absolutePosition, chain[j+1].absolutePosition);
+                    chain[i].rotate(vr, theta * damping, Space.WORLD);
                 }
-                const c = vt.length();  // distance from target to current joint
-                const theta = Math.acos(Vector3.Dot(Vector3.Normalize(ve), Vector3.Normalize(vt)));
-
-                if (c > a+b)
+                continue;
+            }
+            if (c < Math.abs(a-b))
+            {
+                if (!isNaN(theta))
                 {
-                    cur.rotate(vr, theta * dt * speed / iterations, Space.WORLD);
-                    continue;
+                    chain[i].rotate(vr, -theta * damping, Space.WORLD);
                 }
-                if (c < Math.abs(a-b))
+                continue;
+            }
+            if (a*a + b*b - c*c > 0)
+            {
+                let gammaB = Math.acos((a*a+c*c-b*b)/(2*a*c));
+                const gammaC = Math.acos((a*a+b*b-c*c)/(2*a*b));
+                const betaT = Math.PI - gammaC;
+
+                if (betaT > limits[i])
                 {
-                    cur.rotate(vr, -theta * dt * speed / iterations, Space.WORLD);
-                    continue;
+                    gammaB -= 10/180.0*Math.PI;
                 }
-                if (a*a + b*b - c*c > 0)
+                else
                 {
-                    let gammaB = Math.acos((a*a+c*c-b*b)/(2*a*c));
-                    const gammaC = Math.acos((a*a+b*b-c*c)/(2*a*b));
-                    const betaT = Math.PI - gammaC;
-
-                    if (betaT > limits[i])
-                    {
-                        gammaB -= 10/180.0*Math.PI;
-                    }
-                    else
-                    {
-                        gammaB += 10/180.0*Math.PI;
-                    }
-
-                    const betaI = theta - gammaB;
-
-                    cur.rotate(vr, betaI * dt * speed / iterations, Space.WORLD);
-                    continue;
+                    gammaB += 10/180.0*Math.PI;
                 }
+
+                const betaI = theta - gammaB;
+
+                if (!isNaN(betaI))
+                {
+                    chain[i].rotate(vr, betaI * damping, Space.WORLD);
+                }
+                continue;
             }
         }
     }
@@ -126,7 +122,7 @@ export class TargetTriangle extends IKSolver
 /*
 export class FABRIK extends IKSolver
 {
-    solve(chain: Array<TransformNode>, limits: Array<number>, target: Vector3, iterations: number, speed: number): void
+    solve(chain: Array<TransformNode>, limits: Array<number>, target: TransformNode, damping: number): void
     {
 
         /*

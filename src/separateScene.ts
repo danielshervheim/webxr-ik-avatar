@@ -144,14 +144,15 @@ export class SeparateScene
             this.lWrist,
             this.rShoulder,
             this.rElbow,
-            this.rWrist];
+            this.rWrist
+        ];
 
         for (let mesh of this.skeletonMeshes)
         {
             mesh.setEnabled(false);
         }
 
-        this.solver = new CCD(this.engine);
+        this.solver = new CCD();
     }
 
     start() : void
@@ -366,18 +367,20 @@ export class SeparateScene
 
         const limits = [Math.PI/1.5, Math.PI/1.5, Math.PI/1.5];
 
+        const damping = this.engine.getDeltaTime()/1000.0 * 25.0;
+
         if (this.leftController)
         {
             const chain = [this.lShoulder, this.lElbow, this.lWrist];
-            const target = this.leftController.pointer.absolutePosition;
-            this.solver.solve(chain, limits, target, 1, 25.0);
+            const target = this.leftController.pointer;
+            this.solver.solve(chain, limits, target, damping);
         }
 
         if (this.rightController)
         {
             const chain = [this.rShoulder, this.rElbow, this.rWrist];
-            const target = this.rightController.pointer.absolutePosition;
-            this.solver.solve(chain, limits, target, 1, 25.0);
+            const target = this.rightController.pointer;
+            this.solver.solve(chain, limits, target, damping);
         }
 
     }
