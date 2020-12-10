@@ -526,6 +526,9 @@ export class IKAvatar
 
         // Procer users position and head rotation
         this.processUserPosRot();
+
+        // Process User Hand Rotations
+        this.processUserHandRot();
     }
 
 
@@ -1228,6 +1231,33 @@ export class IKAvatar
                 {
                     headBone.rotationQuaternion = new Vector3( rot.x, this.bfActual.y - rot.y, rot.z).toQuaternion();
                 }
+            }
+        }
+    }
+
+    // Process User's Hand Rotations
+    private processUserHandRot()
+    {
+        if( this.rightController?.grip && this.leftController?.grip &&
+            this.userAvatarTask  && this.userAvatarBoneDictionary )
+        {
+            let skeleton = this.userAvatarTask.loadedSkeletons[0];
+            const lHandIdx = skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.LEFT));
+            const rHandIdx = skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.RIGHT));
+
+            if( lHandIdx && rHandIdx )
+            {
+                // var vect = this.leftController.grip.rotationQuaternion!.toEulerAngles()
+                // vect.y -= 0.60;
+                // skeleton.bones[lHandIdx].setRotation( vect );
+                // skeleton.bones[rHandIdx].setRotation( this.rightController.pointer.rotationQuaternion!.toEulerAngles());
+                // skeleton.bones[rHandIdx].rotationQuaternion = this.rightController.grip.rotationQuaternion;
+                // skeleton.bones[lHandIdx].rotationQuaternion = this.leftController.grip.rotationQuaternion;
+                // skeleton.bones[rHandIdx].rotationQuaternion = this.rightController.grip.rotationQuaternion;
+                // this.scene.onBeforeRenderObservable.add(function ()
+                // {
+                //     skeleton.bones[lHandIdx].rotationQuaternion = this.rightController.grip
+                // });
             }
         }
     }
