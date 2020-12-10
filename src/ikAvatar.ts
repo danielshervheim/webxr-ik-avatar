@@ -388,20 +388,25 @@ export class IKAvatar
 
         // TODO: fix this.
 
-        let poleTarget = MeshBuilder.CreateSphere('poleTarget', {diameter: 0.1}, this.scene);
-        poleTarget.position.x       = 0;
-        poleTarget.position.y       = 1.6;
-        poleTarget.position.z       = 0;
-        this.poleTargetTrans.setParent(this.userAvatarRoot);
-        poleTarget.parent           = this.poleTargetTrans;
+        let leftPoleTarget = MeshBuilder.CreateSphere('leftPoleTarget', {diameter: 0.1}, this.scene);
+        leftPoleTarget.position.x       = 0;//-.439;
+        leftPoleTarget.position.y       = 1.6;// 1.453;
+        leftPoleTarget.position.z       = 0;// 1;
+        leftPoleTarget.parent           = this.poleTargetTrans;
+        let rightPoleTarget = MeshBuilder.CreateSphere('rightPoleTarget', {diameter: 0.1}, this.scene);
+        rightPoleTarget.position.x       =  0;//0.439;
+        rightPoleTarget.position.y       =  1.6;//1.453;
+        rightPoleTarget.position.z       = 0;//-//1;
+        rightPoleTarget.parent           = this.poleTargetTrans;
 
+        this.poleTargetTrans.setParent(this.userAvatarRoot);
 
         const leftArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.LEFT))];
         const rightArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.RIGHT))];
 
 
-        const leftIKControl = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: poleTarget, poleAngle: Math.PI });
-        const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: poleTarget, poleAngle: Math.PI });
+        const leftIKControl = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: leftPoleTarget, poleAngle: Math.PI });
+        const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: rightPoleTarget, poleAngle: 0 /*Math.PI*/ });
 
         leftIKControl.maxAngle = Math.PI * 0.9;
         rightIKControl.maxAngle  = Math.PI * 0.9;
