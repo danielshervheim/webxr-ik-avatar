@@ -25,7 +25,7 @@ import { MeshBuilder } from  "@babylonjs/core/Meshes/meshBuilder";
 import { Scene } from "@babylonjs/core/scene";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Vector3 } from "@babylonjs/core/Maths/math";
+import { Vector3, Space } from "@babylonjs/core/Maths/math";
 import { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
 import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllerComponent"
 import { WebXRDefaultExperience } from "@babylonjs/core/XR/webXRDefaultExperience";
@@ -1192,10 +1192,10 @@ export class IKAvatar
             if (skeleton)
             {
                 this.poleTargetTrans.rotation = this.bfActual;
-                let mainTrans = skeleton.bones[0].getTransformNode();
-                if (mainTrans)
+                let mainSkelBone = skeleton.bones[0];
+                if (mainSkelBone)
                 {
-                    mainTrans.rotationQuaternion = this.bfActual.toQuaternion();
+                    mainSkelBone.setYawPitchRoll( this.bfActual.y , - Math.PI, 0, Space.LOCAL );
                 }
             }
         }
@@ -1217,12 +1217,11 @@ export class IKAvatar
             if (skeleton)
             {
                 const rot = this.xrCamera.rotationQuaternion.toEulerAngles();
-                // Yaw = z, Pitch = y, Roll = x;
                 const headIdx = skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHeadName());
-                const headTrans = skeleton.bones[headIdx].getTransformNode();
-                if (headTrans)
+                const headBone = skeleton.bones[headIdx];
+                if (headBone)
                 {
-                    headTrans.rotationQuaternion = new Vector3( rot.x, rot.y - this.bfActual.y, rot.z).toQuaternion();
+                    headBone.rotationQuaternion = new Vector3( rot.x, this.bfActual.y - rot.y, rot.z).toQuaternion();
                 }
             }
         }
