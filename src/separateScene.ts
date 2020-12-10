@@ -324,6 +324,7 @@ export class SeparateScene
 
     private update() : void
     {
+        // SKELETON POSITION
         if (this.xrCamera)
         {
             // TODO: set at xr camera y position???
@@ -335,6 +336,7 @@ export class SeparateScene
                 this.xrCamera.position.z);
         }
 
+        // SKELETON ROTATION
         if (this.leftController && this.rightController && this.xrCamera)
         {
             // Compute the vector from the left to right controllers in the XZ plane.
@@ -354,19 +356,28 @@ export class SeparateScene
             cameraForward.normalize();
 
             // Generate quaternion rotations from the two forward vectors.
-            let averageControllerRotation = this.lookRotation(averageControllerForward, Vector3.Up());
-            let cameraRotation = this.lookRotation(cameraForward, Vector3.Up());
+            const averageControllerRotation = this.lookRotation(averageControllerForward, Vector3.Up());
+            const cameraRotation = this.lookRotation(cameraForward, Vector3.Up());
 
-            // TODO: determine if arms are swapped by telling if lController.x >
-            // rController.x in relation to the cameraForward line. The below is
-            // just a hack, and not a very good one...
-            // It should be "rot = averageControllerRotation if arms not swapped, else cameraRotation"
-            this.root.rotationQuaternion = Quaternion.Slerp(averageControllerRotation, cameraRotation, 0.25);
+            // Compute the controller positions in view space.
+            let cameraWorldToLocal = new Matrix();
+            this.xrCamera.getWorldMatrix().invertToRef(cameraWorldToLocal);
+            const lControllerInCameraLocalSpace = Vector3.TransformCoordinates(this.leftController.pointer.absolutePosition, cameraWorldToLocal);
+            const rControllerInCameraLocalSpace = Vector3.TransformCoordinates(this.rightController.pointer.absolutePosition, cameraWorldToLocal);
+
+            // Generate a blend value: 0 the closer the arms are to crossing
+            // (or crossed), and 1 the further the arms are from crossing.
+            let deltaX = rControllerInCameraLocalSpace.x - lControllerInCameraLocalSpace.x;
+            let blend = Math.min(Math.max(deltaX / 0.336, 0), 1);
+
+            // If the arms are crossed, use the camera rotation. Otherwise,
+            // blend towards the average controller rotation.
+            this.root.rotationQuaternion =  Quaternion.Slerp(cameraRotation, averageControllerRotation, blend);
         }
 
-
+        // SKELETON ARM IK
+        
         const limits = [Math.PI/1.5, Math.PI/1.5, Math.PI/1.5];
-
         const damping = this.engine.getDeltaTime()/1000.0 * 25.0;
 
         if (this.leftController)
