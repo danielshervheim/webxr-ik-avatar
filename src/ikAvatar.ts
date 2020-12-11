@@ -749,6 +749,7 @@ export class IKAvatar
         this.avatarMeasurements[AvatarMeasurements.hipHeight] = hipHeight;
 
         // Measure the avatar meshes current height by computing its Y bounds.
+        // NOTE: this only works if the mesh contains legs and feet!!!
         let minY: number = 100000;
         let maxY: number = -100000;
         for (let mesh of this.userAvatarRoot!.getChildMeshes())
@@ -768,7 +769,9 @@ export class IKAvatar
         // if the users head is exactly on the floor, so its unlikely. But if it
         // were to happen, then it would zero out the user avatars scale, and we
         // would be unable to recover it, so its critical that it doesn't happen).
-        const currentAvatarHeight = maxY - minY;
+
+        const currentAvatarHeight = maxY;  // don't subtract by minY because that breaks if the supplied mesh doesn't have feet/legs!
+        // const currentAvatarHeight = maxY - minY;
         const scalingRatio = height/(1.0*currentAvatarHeight);
         if (Math.abs(scalingRatio) < 0.00001)
         {

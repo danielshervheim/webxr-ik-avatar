@@ -9,9 +9,9 @@ import { StudioScene } from "./studioScene";
 import { SeparateScene } from "./separateScene";
 
 // Instantiate a scene.
-// let scene = new BasicScene();
+let scene = new BasicScene();
 // let scene = new StudioScene();
-let scene = new SeparateScene();
+// let scene = new SeparateScene();
 
 // Start running it.
 scene.start();
