@@ -25,7 +25,7 @@ import { MeshBuilder } from  "@babylonjs/core/Meshes/meshBuilder";
 import { Scene } from "@babylonjs/core/scene";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock"
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Vector3, Space } from "@babylonjs/core/Maths/math";
+import { Vector3, Space, Quaternion } from "@babylonjs/core/Maths/math";
 import { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
 import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllerComponent"
 import { WebXRDefaultExperience } from "@babylonjs/core/XR/webXRDefaultExperience";
@@ -113,7 +113,6 @@ export class IKAvatar
     private bfActual: Vector3;
 
     private headsetPosTrans: TransformNode;
-    private poleTargetTrans: TransformNode;
 
     constructor(scene: Scene)
     {
@@ -168,7 +167,6 @@ export class IKAvatar
         this.bfActual = Vector3.Zero();
 
         this.headsetPosTrans = new TransformNode("headset position", this.scene );
-        this.poleTargetTrans = new TransformNode("pole Target Tran", this.scene );
     }
 
 
@@ -382,31 +380,46 @@ export class IKAvatar
             console.log(task);
         }
 
+        // Pole position values
+        const macroPolePosition = new Vector3(0,  0.484, 0.245);   // Macro is outside of the shoulders
+        const microPolePosition = new Vector3(0, -2.716, 0.245);   // Macro is outside of the shoulders
+        var microPoleLeft  = true;
+        var microPoleRight = true;
 
-        // Disable it initially.
-        // this.userAvatarRoot.setEnabled(false);
+        let poleBox          = MeshBuilder.CreateBox("Pole Bounding Box", {height: 3, width: 0.45, depth: 3}, this.scene);
+            poleBox.position = new Vector3( 0, 0.484, 0.245 );
+            poleBox.setParent( this.userAvatarRoot );
+            poleBox.setEnabled( false );
+            // poleBox.renderOutline = true;
+            // poleBox.enableEdgesRendering(); // Used to debug pole box location
 
-        // TODO: fix this.
+        let leftPoleTarget           = MeshBuilder.CreateSphere('leftPoleTarget', {diameter: 0.1}, this.scene);
+        let rightPoleTarget          = MeshBuilder.CreateSphere('rightPoleTarget', {diameter: 0.1}, this.scene);
+            leftPoleTarget.position  = microPolePosition;
+            rightPoleTarget.position = microPolePosition;
 
-        let leftPoleTarget = MeshBuilder.CreateSphere('leftPoleTarget', {diameter: 0.1}, this.scene);
-        leftPoleTarget.position.x       = 0;//-.439;
-        leftPoleTarget.position.y       = 1.6;// 1.453;
-        leftPoleTarget.position.z       = 0;// 1;
-        leftPoleTarget.parent           = this.poleTargetTrans;
-        let rightPoleTarget = MeshBuilder.CreateSphere('rightPoleTarget', {diameter: 0.1}, this.scene);
-        rightPoleTarget.position.x       =  0;//0.439;
-        rightPoleTarget.position.y       =  1.6;//1.453;
-        rightPoleTarget.position.z       = 0;//-//1;
-        rightPoleTarget.parent           = this.poleTargetTrans;
+            leftPoleTarget.setEnabled(false);
+        rightPoleTarget.setEnabled(false);
+        // Assign the poleTargets to follow the main skeleton
+        //Update user position
 
-        this.poleTargetTrans.setParent(this.userAvatarRoot);
+        let mainSkelBone = skeleton.bones[0];
+        if (mainSkelBone)
+        {
+            leftPoleTarget.attachToBone(mainSkelBone, this.userAvatarRoot );
+            rightPoleTarget.attachToBone(mainSkelBone, this.userAvatarRoot );
+            poleBox.attachToBone(mainSkelBone, this.userAvatarRoot );
+        }
 
         const leftArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.LEFT))];
         const rightArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.RIGHT))];
-
-
         const leftIKControl = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: leftPoleTarget, poleAngle: Math.PI });
-        const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: rightPoleTarget, poleAngle: 0 /*Math.PI*/ });
+        const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: rightPoleTarget, poleAngle: 0 });
+
+        const leftHandBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.LEFT))];
+        leftHandBone.rotationQuaternion = ( new Vector3( 0, -Math.PI / 2, 0).toQuaternion());
+        const rightHandBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.RIGHT))];
+        rightHandBone.rotationQuaternion = ( new Vector3(0, - ( Math.PI / 2 ), 0 ).toQuaternion());
 
         leftIKControl.maxAngle = Math.PI * 0.9;
         rightIKControl.maxAngle  = Math.PI * 0.9;
@@ -416,6 +429,47 @@ export class IKAvatar
 
         this.scene.registerBeforeRender(()=>
         {
+            // Update Pole Targets
+            if( this.targetRight.intersectsMesh( poleBox ) )
+            {
+                //If not already, set pole to micro
+                if( !microPoleRight )
+                {
+                    microPoleRight = true;
+                    rightPoleTarget.position = microPolePosition;
+                    rightHandBone.rotationQuaternion = ( new Vector3(0, -( Math.PI / 2 ), 0 ).toQuaternion());
+                }
+            }
+            else
+            {
+                // If not already, set to macro
+                if( microPoleRight )
+                {
+                    microPoleRight = false;
+                    rightPoleTarget.position = macroPolePosition;
+                    rightHandBone.rotationQuaternion = ( new Vector3(0, Math.PI, 0 ).toQuaternion());
+                }
+            }
+            if( this.targetLeft.intersectsMesh( poleBox ) )
+            {
+                // If not already, set pole to micro
+                if( !microPoleLeft )
+                {
+                    microPoleLeft = true;
+                    leftPoleTarget.position = microPolePosition;
+                    leftHandBone.rotationQuaternion = ( new Vector3(0, - ( Math.PI / 2 ), 0 ).toQuaternion());
+                }
+            }
+            else
+            {
+                // If not already, set to macro
+                if( microPoleLeft )
+                {
+                    microPoleLeft = false;
+                    leftPoleTarget.position = macroPolePosition;
+                    leftHandBone.rotationQuaternion = ( new Vector3(0, 0, 0 ).toQuaternion());
+                }
+            }
             leftIKControl.update();
             rightIKControl.update();
             bone1AxesViewer.update();
@@ -1199,7 +1253,6 @@ export class IKAvatar
             let skeleton = this.userAvatarTask.loadedSkeletons[0];
             if (skeleton)
             {
-                this.poleTargetTrans.rotation = this.bfActual;
                 let mainSkelBone = skeleton.bones[0];
                 if (mainSkelBone)
                 {
@@ -1218,7 +1271,7 @@ export class IKAvatar
             if (Vector3.Distance(this.xrCamera.position, this.headsetPosTrans.position) > 1.60)
             {
                 this.headsetPosTrans.position = this.xrCamera.position.clone();
-                this.headsetPosTrans.position.y = 0;
+                // this.headsetPosTrans.position.y = 0;
             }
             // update user head rotation
             let skeleton = this.userAvatarTask.loadedSkeletons[0];
