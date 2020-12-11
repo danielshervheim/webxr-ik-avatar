@@ -101,6 +101,9 @@ export class IKAvatar
     private targetRight: Mesh;
     private targetLeft: Mesh;
 
+    private microPoleLeft: Boolean;
+    private microPoleRight: Boolean;
+
     // Head/Hands position and orientaiton caches
     private hp : SmartArray<Vector3>;
     private lhp: SmartArray<Vector3>;
@@ -147,6 +150,9 @@ export class IKAvatar
 
         this.targetRight = MeshBuilder.CreateSphere("Right Target", { diameter: 0.1 }, this.scene);
         this.targetLeft  = MeshBuilder.CreateSphere("Left Target",  { diameter: 0.1 }, this.scene);
+
+        this.microPoleLeft  = true;
+        this.microPoleRight = true;
 
         this.hp  = new SmartArray( 50 );
         this.lhp = new SmartArray( 50 );
@@ -383,13 +389,15 @@ export class IKAvatar
         // Pole position values
         const macroPolePosition = new Vector3(0,  0.484, 0.245);   // Macro is outside of the shoulders
         const microPolePosition = new Vector3(0, -2.716, 0.245);   // Macro is outside of the shoulders
-        var microPoleLeft  = true;
-        var microPoleRight = true;
+        this.microPoleLeft  = true;
+        this.microPoleRight = true;
 
         let poleBox          = MeshBuilder.CreateBox("Pole Bounding Box", {height: 3, width: 0.45, depth: 3}, this.scene);
             poleBox.position = new Vector3( 0, 0.484, 0.245 );
             poleBox.setParent( this.userAvatarRoot );
             poleBox.setEnabled( false );
+            // Debug poleBox
+            // poleBox.setEnabled( true );
             // poleBox.renderOutline = true;
             // poleBox.enableEdgesRendering(); // Used to debug pole box location
 
@@ -398,7 +406,7 @@ export class IKAvatar
             leftPoleTarget.position  = microPolePosition;
             rightPoleTarget.position = microPolePosition;
 
-            leftPoleTarget.setEnabled(false);
+        leftPoleTarget.setEnabled(false);
         rightPoleTarget.setEnabled(false);
         // Assign the poleTargets to follow the main skeleton
         //Update user position
@@ -411,18 +419,18 @@ export class IKAvatar
             poleBox.attachToBone(mainSkelBone, this.userAvatarRoot );
         }
 
-        const leftArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.LEFT))];
+        const leftArmBone  = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.LEFT))];
         const rightArmBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getForeArmName(Side.RIGHT))];
-        const leftIKControl = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: leftPoleTarget, poleAngle: Math.PI });
+        const leftIKControl  = new BoneIKController(leftArmMesh, leftArmBone, { targetMesh: this.targetLeft, poleTargetMesh: leftPoleTarget, poleAngle: Math.PI });
         const rightIKControl = new BoneIKController(rightArmMesh, rightArmBone, { targetMesh: this.targetRight, poleTargetMesh: rightPoleTarget, poleAngle: 0 });
 
-        const leftHandBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.LEFT))];
-        leftHandBone.rotationQuaternion = ( new Vector3( 0, -Math.PI / 2, 0).toQuaternion());
+        const leftHandBone  = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.LEFT))];
         const rightHandBone = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary.getHandName(Side.RIGHT))];
+        leftHandBone.rotationQuaternion  = ( new Vector3( 0, -Math.PI / 2, 0).toQuaternion());
         rightHandBone.rotationQuaternion = ( new Vector3(0, - ( Math.PI / 2 ), 0 ).toQuaternion());
 
-        leftIKControl.maxAngle = Math.PI * 0.9;
-        rightIKControl.maxAngle  = Math.PI * 0.9;
+        leftIKControl.maxAngle  = Math.PI * 0.9;
+        rightIKControl.maxAngle = Math.PI * 0.9;
 
         const bone1AxesViewer = new BoneAxesViewer(this.scene, leftArmBone, <Mesh>leftArmMesh);
         const bone2AxesViewer = new BoneAxesViewer(this.scene, rightArmBone, <Mesh>rightArmMesh);
@@ -433,40 +441,40 @@ export class IKAvatar
             if( this.targetRight.intersectsMesh( poleBox ) )
             {
                 //If not already, set pole to micro
-                if( !microPoleRight )
+                if( !this.microPoleLeft )
                 {
-                    microPoleRight = true;
-                    rightPoleTarget.position = microPolePosition;
+                    this.microPoleRight              = true;
+                    rightPoleTarget.position         = microPolePosition;
                     rightHandBone.rotationQuaternion = ( new Vector3(0, -( Math.PI / 2 ), 0 ).toQuaternion());
                 }
             }
             else
             {
                 // If not already, set to macro
-                if( microPoleRight )
+                if( this.microPoleRight )
                 {
-                    microPoleRight = false;
-                    rightPoleTarget.position = macroPolePosition;
+                    this.microPoleRight              = false;
+                    rightPoleTarget.position         = macroPolePosition;
                     rightHandBone.rotationQuaternion = ( new Vector3(0, Math.PI, 0 ).toQuaternion());
                 }
             }
             if( this.targetLeft.intersectsMesh( poleBox ) )
             {
                 // If not already, set pole to micro
-                if( !microPoleLeft )
+                if( !this.microPoleLeft )
                 {
-                    microPoleLeft = true;
-                    leftPoleTarget.position = microPolePosition;
+                    this.microPoleLeft              = true;
+                    leftPoleTarget.position         = microPolePosition;
                     leftHandBone.rotationQuaternion = ( new Vector3(0, - ( Math.PI / 2 ), 0 ).toQuaternion());
                 }
             }
             else
             {
                 // If not already, set to macro
-                if( microPoleLeft )
+                if( this.microPoleLeft )
                 {
-                    microPoleLeft = false;
-                    leftPoleTarget.position = macroPolePosition;
+                    this.microPoleLeft              = false;
+                    leftPoleTarget.position         = macroPolePosition;
                     leftHandBone.rotationQuaternion = ( new Vector3(0, 0, 0 ).toQuaternion());
                 }
             }
@@ -1291,6 +1299,10 @@ export class IKAvatar
     // Process User's Hand Rotations
     private processUserHandRot()
     {
+        // Right Now It will only handle user hand rotations when the controllers are between the shoulders
+        // The controller rotation mapping breaks down at angles far away from body
+        // Users would also likely not being doing complex movements at distances far away from the body
+        // To See the effects away from body uncomment Left/Right Macro Code blocks below
         if( this.rightController?.grip && this.leftController?.grip &&
             this.userAvatarTask  && this.userAvatarBoneDictionary )
         {
@@ -1300,17 +1312,28 @@ export class IKAvatar
 
             if( lHandIdx && rHandIdx )
             {
-                // var vect = this.leftController.grip.rotationQuaternion!.toEulerAngles()
-                // vect.y -= 0.60;
-                // skeleton.bones[lHandIdx].setRotation( vect );
-                // skeleton.bones[rHandIdx].setRotation( this.rightController.pointer.rotationQuaternion!.toEulerAngles());
-                // skeleton.bones[rHandIdx].rotationQuaternion = this.rightController.grip.rotationQuaternion;
-                // skeleton.bones[lHandIdx].rotationQuaternion = this.leftController.grip.rotationQuaternion;
-                // skeleton.bones[rHandIdx].rotationQuaternion = this.rightController.grip.rotationQuaternion;
-                // this.scene.onBeforeRenderObservable.add(function ()
-                // {
-                //     skeleton.bones[lHandIdx].rotationQuaternion = this.rightController.grip
-                // });
+                var leftVect  = this.leftController.pointer.rotationQuaternion!.toEulerAngles()
+                var rightVect = this.rightController.pointer.rotationQuaternion!.toEulerAngles()
+                // Left MICRO
+                if( this.microPoleLeft )
+                {
+                    skeleton.bones[lHandIdx].setYawPitchRoll( - (leftVect.z + Math.PI / 2) , leftVect.x , -this.bfActual.y + ( leftVect.y ) );
+                }
+                // Left MACRO
+                else
+                {
+                    // skeleton.bones[lHandIdx].setYawPitchRoll( -leftVect.z, leftVect.x, -this.bfActual.y + leftVect.y);
+                }
+                // Right MICRO
+                if( this.microPoleRight )
+                {
+                    skeleton.bones[rHandIdx].setYawPitchRoll( - (rightVect.z + Math.PI / 2) , - rightVect.x , this.bfActual.y - ( rightVect.y ) );
+                }
+                // Right MACRO
+                else
+                {
+                    // skeleton.bones[rHandIdx].setYawPitchRoll( - (rightVect.z + Math.PI ) , - rightVect.x ,this.bfActual.y -( rightVect.y ) );
+                }
             }
         }
     }
