@@ -365,6 +365,7 @@ export class IKAvatar
         this.userAvatarInitialScale = scaling;
         this.userAvatarRoot.scaling = this.userAvatarInitialScale;
 
+        this.userAvatarRoot.setParent(this.headsetPosTrans);
         // Look for left and right arm meshes.
         const leftArms = this.userAvatarRoot.getChildMeshes(false, (mesh)=>mesh.name == leftArmMeshName);
         const rightArms = this.userAvatarRoot.getChildMeshes(false, (mesh)=>mesh.name == rightArmMeshName);
@@ -396,9 +397,8 @@ export class IKAvatar
         let poleBox          = MeshBuilder.CreateBox("Pole Bounding Box", {height: 3, width: 0.45, depth: 3}, this.scene);
             poleBox.position = new Vector3( 0, 0.484, 0.245 );
             poleBox.setParent( this.userAvatarRoot );
-            poleBox.setEnabled( false );
+            poleBox.setEnabled( true );
             // Debug poleBox
-            // poleBox.setEnabled( true );
             // poleBox.renderOutline = true;
             // poleBox.enableEdgesRendering(); // Used to debug pole box location
 
@@ -439,10 +439,10 @@ export class IKAvatar
         this.scene.registerBeforeRender(()=>
         {
             // Update Pole Targets
-            if( this.targetRight.intersectsMesh( poleBox ) )
+            if( this.targetRight.intersectsMesh( poleBox, true ) )
             {
                 //If not already, set pole to micro
-                if( !this.microPoleLeft )
+                if( !this.microPoleRight )
                 {
                     this.microPoleRight              = true;
                     rightPoleTarget.position         = microPolePosition;
@@ -459,7 +459,7 @@ export class IKAvatar
                     rightHandBone.rotationQuaternion = ( new Vector3(0, Math.PI, 0 ).toQuaternion());
                 }
             }
-            if( this.targetLeft.intersectsMesh( poleBox ) )
+            if( this.targetLeft.intersectsMesh( poleBox, true ) )
             {
                 // If not already, set pole to micro
                 if( !this.microPoleLeft )
@@ -1177,14 +1177,13 @@ export class IKAvatar
     // Process User position and head rotation
     private processUserPosRot()
     {
-        if (this.xrCamera && this.userAvatarTask && this.userAvatarBoneDictionary)
+        if (this.xrCamera && this.userAvatarTask && this.userAvatarBoneDictionary && this.userAvatarRoot)
         {
-            // Only Update user position if noticeable change not just looking down
-            if (Vector3.Distance(this.xrCamera.position, this.headsetPosTrans.position) > 1.60)
-            {
-                this.headsetPosTrans.position = this.xrCamera.position.clone();
-                // this.headsetPosTrans.position.y = 0;
-            }
+            let newPos    = this.xrCamera.position.clone();
+                newPos.y -= 1.8;
+                newPos.z += 0.21;
+            this.headsetPosTrans.position = newPos;
+
             // update user head rotation
             let skeleton = this.userAvatarTask.loadedSkeletons[0];
             if (skeleton)
@@ -1194,7 +1193,7 @@ export class IKAvatar
                 const headBone = skeleton.bones[headIdx];
                 if (headBone)
                 {
-                    headBone.rotationQuaternion = new Vector3( rot.x, this.bfActual.y - rot.y, rot.z).toQuaternion();
+                    headBone.rotationQuaternion = new Vector3( rot.x, this.bfActual.y - rot.y, -rot.z).toQuaternion();
                 }
             }
         }
