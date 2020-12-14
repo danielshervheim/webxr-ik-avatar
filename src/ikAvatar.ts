@@ -40,11 +40,12 @@ const DEBUG: boolean = true;
 enum CalibrationMode
 {
     startCal,
-    height,  // Straight up
     armSpan,  // T-Pose
-    shoulderTouch,  // Hands-to-shoulders
     finish,
     hide
+    // Deprecated
+    // height,          // Combined with T-Pose
+    // shoulderTouch,   // use Ratios instead
 }
 
 // Avatar measurement types.
@@ -516,7 +517,8 @@ export class IKAvatar
         // TODO: expose the options available for GUI positioning to the user somehow.
         this.setupCalibrationUIWithDefaults();
 
-        // TODO: what is this for???
+        // TODO: Include if the avatar model does not have correct bone lengths
+        // No longer used and untested
         // this.getBoneLengths();
 
         if (DEBUG)
@@ -652,78 +654,21 @@ export class IKAvatar
             console.log("DEBUG - IKAvatar.recordArmSpan()");
             console.log("armLength = " + armLength);
         }
-    }
 
-    private recordArmBones() : void
-    {
-        if (!this.rightController?.grip || !this.leftController?.grip)
+        // Should Scale user arms if boneik didn't work
+        var skeleton = this.userAvatarTask?.loadedSkeletons[0];
+        if(skeleton)
         {
-            console.error("IKAvatar.recordArmBones() failed. Null controller grip(s).");
-            return;
+            var lArm     = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getArmName(Side.LEFT))];
+            var rArm     = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getArmName(Side.RIGHT))];
+            var lForeArm = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getForeArmName(Side.LEFT))];
+            var lHand    = skeleton.bones[skeleton.getBoneIndexByName(this.userAvatarBoneDictionary!.getHandName(Side.LEFT))];
+
+            var totalLength = lArm.length + lForeArm.length + lHand.length;
+            var scale = armLength / totalLength;
+            lArm.setScale( new Vector3( scale, scale, scale ) );
+            rArm.setScale( new Vector3( scale, scale, scale ) );
         }
-
-        // TODO: this.
-
-        /*
-        var upperArmLength = 0;
-        var foreArmLength  = 0;
-        if( this.rightController?.grip && this.leftController?.grip )
-        {
-            var user     = this.scene.getMeshByName("user");
-            var userSkel = this.scene.getSkeletonByName("userSkel");
-            // Only resize if the user avatar exists and its scaling is uniform
-            if( userSkel && user && ( !user.scaling.isNonUniform ) )
-            {
-                // Get Distance Between the hand and the wrist
-                var lHandIdx   = userSkel.getBoneIndexByName( "LeftHand" );
-
-                // Note indexes are swapped intentionally
-                var rUpperArmIdx = userSkel.getBoneIndexByName( "LeftArm" );
-                var lUpperArmIdx = userSkel.getBoneIndexByName( "RightArm" );
-                var lForeArmIdx  = userSkel.getBoneIndexByName( "RightForeArm" );
-                var lHandIdx     = userSkel.getBoneIndexByName( "RightHand" );
-
-                // Get Transform Nodes to modify
-                var rUpperArmTrans = userSkel.bones[rUpperArmIdx].getTransformNode();
-                var lUpperArmTrans = userSkel.bones[lUpperArmIdx].getTransformNode();
-
-                // Get Bone Lengths when Scaled at 1
-                var rUpperArmLength = userSkel.bones[rUpperArmIdx].length;
-                var lUpperArmLength = userSkel.bones[lUpperArmIdx].length;
-                var lForeArmLength  = userSkel.bones[lForeArmIdx].length;
-                var handLength      = userSkel.bones[lHandIdx].length;
-
-                // Ratio length: hand, forearm upper arm
-                var handRatio     = handLength      / ( handLength + lForeArmLength + lUpperArmLength );
-                var foreArmRatio  = lForeArmLength  / ( handLength + lForeArmLength + lUpperArmLength );
-                var upperArmRatio = lUpperArmLength / ( handLength + lForeArmLength + lUpperArmLength );
-
-                var torsoWidth = Vector3.Distance(this.rightController.grip.position, this.leftController.grip.position);
-                // Update Arm Lengths to Account for Torso Width
-                this.avatarMeasurements[AvatarMeasurements.rightArm] -= ( torsoWidth / 2 );
-                this.avatarMeasurements[AvatarMeasurements.leftArm]  -= ( torsoWidth / 2 );
-
-                // Assume User Arm Proportions are the standard proportions (shoulder2Elbow 45%, elbow2Wrist 55%)
-                upperArmLength = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (upperArmRatio) );
-                foreArmLength  = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (foreArmRatio) );
-                handLength     = ( this.avatarMeasurements[AvatarMeasurements.rightArm] * (handRatio) );
-
-                this.avatarMeasurements[AvatarMeasurements.leftUpperArm]  = upperArmLength;
-                this.avatarMeasurements[AvatarMeasurements.rightUpperArm] = upperArmLength;
-                this.avatarMeasurements[AvatarMeasurements.leftForeArm]   = foreArmLength;
-                this.avatarMeasurements[AvatarMeasurements.rightForeArm]  = foreArmLength;
-
-                // Upper Arm Scalings
-                var rUpperArmScaled = ( upperArmLength / rUpperArmLength ) / user.scaling.x;
-                var lUpperArmScaled = ( upperArmLength / lUpperArmLength ) / user.scaling.x;
-                rUpperArmTrans!.scaling = new Vector3( rUpperArmScaled, rUpperArmScaled, rUpperArmScaled );
-                lUpperArmTrans!.scaling = new Vector3( lUpperArmScaled, lUpperArmScaled, lUpperArmScaled );
-
-                rUpperArmTrans?.computeWorldMatrix();
-                lUpperArmTrans?.computeWorldMatrix();
-            }
-        }
-        */
     }
 
     private recordHeight() : void
@@ -860,8 +805,6 @@ export class IKAvatar
         }
     }
 
-
-
     // --------------- //
     // INPUT FUNCTIONS //
     // --------------- //
@@ -914,17 +857,11 @@ export class IKAvatar
         {
             this.calibrationProcedureStart();
         }
-        else if (this.calibrationMode == CalibrationMode.height)
-        {
-            this.calibrationProcedureRecordHeight();
-        }
+
         else if (this.calibrationMode == CalibrationMode.armSpan)
         {
+            this.calibrationProcedureRecordHeight();
             this.calibrationProcedureRecordArmSpan();
-        }
-        else if (this.calibrationMode == CalibrationMode.shoulderTouch)
-        {
-            this.calibrationProcedureRecordShoulders();
         }
         else if (this.calibrationMode == CalibrationMode.finish)
         {
@@ -997,9 +934,6 @@ export class IKAvatar
 
     private calibrationProcedureRecordArmSpan() : void
     {
-        // Record the users height from the previous step.
-        this.recordHeight();
-
         // Switch to the T Pose animation.
         {
             const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
@@ -1032,45 +966,13 @@ export class IKAvatar
             "my pose.";
     }
 
-    private calibrationProcedureRecordShoulders() : void
-    {
-        // Record the users arm span from the previous step.
-        this.recordArmSpan();
-
-        // Switch to the hands-on-shoulders animation.
-        {
-            const skeleton = this.calibrationAvatarTask!.loadedSkeletons[0];
-            if (!skeleton)
-            {
-                console.error("IKAvatar.calibrationProcedureRecordShoulders() failed. Null skeleton.");
-                return;
-            }
-
-            const range = skeleton!.getAnimationRange(this.calibrationAnimationDictionary!.getHandsOnShoulders());
-            if (!range)
-            {
-                console.error("IKAvatar.calibrationProcedureRecordShoulders() failed. Null range.");
-                return;
-            }
-
-            // NOTE: TODO: there is a bug in the blender exporter for single-frame animations,
-            // so we need to manually set the range as (to, to) rather than (from, to)
-            this.scene.beginAnimation(skeleton, range.to, range.to, false);
-            // this.scene.beginAnimation(skeleton, range.from, range.to, true);
-        }
-
-        this.calibrationTextBlock.fontSize = 96;
-        this.calibrationTextBlock.text =
-            "Place your hands on your shoulders\n" +
-            "so I can measure your forearm length.\n\n" +
-
-            "Press A once you've matched my pose.";
-    }
-
     private calibrationProcedureFinish() : void
     {
-        // Record the users arm bone lengths from the previous step.
-        this.recordArmBones();
+        // Record the users height from the previous step.
+        this.recordHeight();
+
+        // Record the users arm span from the previous step.
+        this.recordArmSpan();
 
         // Switch to the finish animation.
         {
@@ -1098,7 +1000,6 @@ export class IKAvatar
             "Press A once more to close\n" +
             "this window.";
     }
-
 
 
     // ------------------------- //
