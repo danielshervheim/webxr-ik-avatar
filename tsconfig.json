@@ -14,7 +14,8 @@
 		"sourceMap": true,
 		"watch": false,
 		"resolveJsonModule": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"downlevelIteration": true
 	},
 	"files": [
 		"src/index.ts"
