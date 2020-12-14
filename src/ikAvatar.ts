@@ -1325,6 +1325,7 @@ export class IKAvatar
                 // Left MACRO
                 else
                 {
+                    // Comment out Intentional for now: Disable rotation outside of shoulders
                     // skeleton.bones[lHandIdx].setYawPitchRoll( -leftVect.z, leftVect.x, -this.bfActual.y + leftVect.y);
                 }
                 // Right MICRO
@@ -1335,6 +1336,7 @@ export class IKAvatar
                 // Right MACRO
                 else
                 {
+                    // Comment out Intentional for now: Disable rotation outside of shoulders
                     // skeleton.bones[rHandIdx].setYawPitchRoll( - (rightVect.z + Math.PI ) , - rightVect.x ,this.bfActual.y -( rightVect.y ) );
                 }
             }
