@@ -4,7 +4,6 @@ import { AvatarTransforms, TransformIndex } from "./avatarTransforms";
 import { BoneIndex, SkeletonBones } from "./skeletonBones";
 import { CCD, IKSolver } from "./ikSolver";
 import { Utilities } from "./utilities";
-import { XRLogger } from "./xrLogger";
 
 // Babylon imports.
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
@@ -38,27 +37,6 @@ enum CalibrationState
     FINISH
 }
 
-// temp.
-
-const ROTS = [
-    new Vector3(0, 0, 0),
-    new Vector3(Math.PI/2.0, 0, 0),
-    new Vector3(0, Math.PI/2.0, 0),
-    new Vector3(0, 0, Math.PI/2.0),
-
-    new Vector3(-Math.PI/2.0, 0, 0),
-    new Vector3(0, -Math.PI/2.0, 0),
-    new Vector3(0, 0, -Math.PI/2.0),
-
-    new Vector3(Math.PI, 0, 0),
-    new Vector3(0, Math.PI, 0),
-    new Vector3(0, 0, Math.PI),
-
-    new Vector3(-Math.PI, 0, 0),
-    new Vector3(0, -Math.PI, 0),
-    new Vector3(0, 0, -Math.PI),
-];
-
 export class IKAvatar
 {
     private scene: Scene;
@@ -78,21 +56,8 @@ export class IKAvatar
     private avatarSkeleton: Skeleton | null = null;
     private avatarBones: SkeletonBones | null = null;
 
-
-    // TMP.
-    private logger: XRLogger;
-    private rotsIndex: number = 0;
-
     constructor(scene: Scene, xrExperience: WebXRDefaultExperience)
     {
-        this.logger = new XRLogger(
-            scene,
-            new Vector3(1.5, 1.5, 0),
-            new Vector3(0, Math.PI/2.0, 0),
-            Vector3.One(),
-            null
-        );
-
         this.scene = scene;
         this.xrExperience = xrExperience;
         this.xrExperience.input.onControllerAddedObservable.add((inputSource: WebXRInputSource) =>
@@ -143,6 +108,8 @@ export class IKAvatar
         this.avatarRoot = avatarRoot;
         this.avatarSkeleton = avatarSkeleton;
         this.avatarBones = avatarBones;
+
+        // TODO: need to scale arms?
     }
 
     unbindSkeletalMesh(): void
@@ -195,6 +162,16 @@ export class IKAvatar
         {
             this.cancelCalibration();
         }
+
+        // X pressed.
+        if (this.leftController?.motionController?.getComponent("x-button").changes.pressed?.current)
+        {
+        }
+
+        // Y pressed.
+        if (this.leftController?.motionController?.getComponent("y-button").changes.pressed?.current)
+        {
+        }
     }
 
     advanceCalibration(): void
@@ -212,10 +189,6 @@ export class IKAvatar
     {
         this.calibrationState = CalibrationState.OFF;
         this.setGuideMeshVisibility();
-
-        // TMP.
-        this.rotsIndex = (this.rotsIndex+1)%(ROTS.length);
-        this.logger.log("rotation = " + ROTS[this.rotsIndex], true);
     }
 
     private calibrate(): void
@@ -225,28 +198,19 @@ export class IKAvatar
             this.leftController!.pointer.absolutePosition,
             this.rightController!.pointer.absolutePosition
         );
-        this.logger.log("dist = " + dist, false);
 
         if (this.avatarRoot)
         {
             const meshHeight = Utilities.GetBoundingHeight(this.avatarRoot);
-            this.logger.log("mesh height = " + meshHeight, false);
-
             const avatarHeight = this.transforms.getHeight();
-            this.logger.log("avatar height = " + avatarHeight, false);
-
-
             const scalingRatio = avatarHeight/(meshHeight);
             if (Math.abs(scalingRatio) < 0.00001)
             {
                 const msg: string = "WARNING - IKAvatar.calibrate(). Degenerate scaling ratio. Ignoring.";
                 console.error(msg);
-
-                this.logger.log(msg, false);
             }
             else
             {
-                this.logger.log("scaling ratio = " + scalingRatio, false);
                 this.avatarRoot.scaling.scaleInPlace(scalingRatio);
             }
         }
@@ -386,46 +350,40 @@ export class IKAvatar
             // TODO: copy the IK chains.
             if (this.avatarBones)
             {
-                const transforms = [
-                    this.transforms.getNode(TransformIndex.LEFT_SHOULDER),
-                    this.transforms.getNode(TransformIndex.LEFT_ELBOW),
-                    this.transforms.getNode(TransformIndex.LEFT_WRIST),
-                    this.transforms.getNode(TransformIndex.RIGHT_SHOULDER),
-                    this.transforms.getNode(TransformIndex.RIGHT_ELBOW),
-                    this.transforms.getNode(TransformIndex.RIGHT_WRIST)
+                const transformIndicies = [
+                    TransformIndex.LEFT_SHOULDER,
+                    TransformIndex.LEFT_ELBOW,
+                    TransformIndex.LEFT_WRIST,
+                    TransformIndex.RIGHT_SHOULDER,
+                    TransformIndex.RIGHT_ELBOW,
+                    TransformIndex.RIGHT_WRIST
                 ];
-                const bones = [
-                    this.avatarBones.getBone(BoneIndex.LEFT_SHOULDER),
-                    this.avatarBones.getBone(BoneIndex.LEFT_ELBOW),
-                    this.avatarBones.getBone(BoneIndex.LEFT_WRIST),
-                    this.avatarBones.getBone(BoneIndex.RIGHT_SHOULDER),
-                    this.avatarBones.getBone(BoneIndex.RIGHT_ELBOW),
-                    this.avatarBones.getBone(BoneIndex.RIGHT_WRIST)
+                const boneIndicies = [
+                    BoneIndex.LEFT_SHOULDER,
+                    BoneIndex.LEFT_ELBOW,
+                    BoneIndex.LEFT_WRIST,
+                    BoneIndex.RIGHT_SHOULDER,
+                    BoneIndex.RIGHT_ELBOW,
+                    BoneIndex.RIGHT_WRIST
                 ];
 
-                for (let i in transforms)
+                for (let i = 0; i < transformIndicies.length; i++)
                 {
-                    Utilities.SetBoneRotationFromTransformNodeRotation(
-                        transforms[i],
-                        bones[i]
-                    );
+                    const transform = this.transforms.getNode(transformIndicies[i]);
+                    const bone = this.avatarBones.getBone(boneIndicies[i]);
+
+                    if (transform.rotationQuaternion != null)
+                    {
+                        bone.setRotationQuaternion(transform.rotationQuaternion!.clone(), Space.LOCAL);
+                        // TODO: for some reason this extra rotation is necessary.
+                        // I think its something to do w/ the way the mesh is
+                        // prepared in blender???
+                        if (boneIndicies[i] == BoneIndex.LEFT_SHOULDER || boneIndicies[i] == BoneIndex.RIGHT_SHOULDER)
+                        {
+                            bone.rotate(Vector3.Right(), Math.PI, Space.LOCAL);
+                        }
+                    }
                 }
-
-
-                /*
-                const aLeftShoulder = this.transforms.getNode(TransformIndex.LEFT_SHOULDER);
-                const aLeftElbow = this.transforms.getNode(TransformIndex.LEFT_ELBOW);
-                const aLeftWrist = this.transforms.getNode(TransformIndex.LEFT_WRIST);
-
-                const bLeftShoulder = this.avatarBones.getBone(BoneIndex.LEFT_SHOULDER);
-                const bLeftElbow = this.avatarBones.getBone(BoneIndex.LEFT_ELBOW);
-                const bLeftWrist = this.avatarBones.getBone(BoneIndex.LEFT_WRIST);
-
-                // aShoulderToElbow = Quaternion.LookRotation
-                const x = Utilities.WorldToLocalPosition(aLeftElbow.absolutePosition, bLeftShoulder);
-                const y = Utilities.WorldToLocalPosition(aLeftShoulder.absolutePosition, bLeftShoulder);
-                bLeftShoulder.rotationQuaternion = Utilities.LookRotation(Vector3.Normalize(x.subtract(y)), Vector3.Up());
-                */
             }
         }
     }

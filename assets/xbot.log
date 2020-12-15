@@ -12,7 +12,7 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		Texture directory   :  /Users/danielshervheim/Documents/Github/f20-5619/VR-Avatar-IK/assets/
 	Python World class constructor completed
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
-	processing begun of skeleton:  Ybot, id:  0
+	processing begun of skeleton:  Armature, id:  0
 		processing begun of bone:  mixamorig:Hips, index:  0
 		processing begun of bone:  mixamorig:Spine, index:  1
 		processing begun of bone:  mixamorig:Spine1, index:  2
@@ -80,116 +80,43 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		processing begun of bone:  mixamorig:LeftFoot, index:  64
 		processing begun of bone:  mixamorig:LeftToeBase, index:  65
 		processing begun of bone:  mixamorig:LeftToe_End, index:  66
-		processing action YBot_Celebrate:  in[1 - 88], out[0 - 88]
-		processing action YBot_Idle:  in[1 - 226], out[100 - 326]
-		processing action YBot_TPose:  in[1 - 2], out[340 - 342]
-	processing begun of mesh:  Ybot_body_upper
-		processing begun of material:  ybot_body
+		processing action Armature.001|mixamo.com|Layer0:  in[1 - 61], out[0 - 61]
+		processing action Armature|mixamo.com|Layer0:  in[1 - 2], out[70 - 72]
+	processing begun of mesh:  Alpha_Surface
+		processing begun of material:  xbot_body
 		Custom split normals with tangents being used
-		num positions      :  20161
-		num normals        :  20161
-		num tangents       :  80644
-		num uvs            :  40322
+		num positions      :  32964
+		num normals        :  32964
+		num tangents       :  131856
+		num uvs            :  65928
 		num uvs2           :  0
 		num colors         :  0
-		num triangles      :  20012
+		num triangles      :  34480
 		Skeleton stats:  
-			Total Influencers:  25364
-			Avg # of influencers per vertex:  1.2581
+			Total Influencers:  40597
+			Avg # of influencers per vertex:  1.2316
 			Highest # of influencers observed:  4, num vertices with this:  365
 			exported as 4 influencers
-			num skeletonWeights and skeletonIndices:  80644
-	processing begun of mesh:  Ybot_joints_upper
-		processing begun of material:  ybot_joints
+			num skeletonWeights and skeletonIndices:  131856
+	processing begun of mesh:  Alpha_Joints
+		processing begun of material:  xbot_joints
 		Custom split normals with tangents being used
-		num positions      :  8916
-		num normals        :  8916
-		num tangents       :  35664
-		num uvs            :  17832
+		num positions      :  13643
+		num normals        :  13643
+		num tangents       :  54572
+		num uvs            :  27286
 		num uvs2           :  0
 		num colors         :  0
-		num triangles      :  13240
+		num triangles      :  20840
 		Skeleton stats:  
-			Total Influencers:  8916
+			Total Influencers:  13643
 			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  8916
+			Highest # of influencers observed:  1, num vertices with this:  13643
 			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  35664
-	processing begun of mesh:  Ybot_neck
-		processing begun of material:  ybot_joints
-		registered as also a user of material:  ybot_joints
-		Custom split normals with tangents being used
-		num positions      :  476
-		num normals        :  476
-		num tangents       :  1904
-		num uvs            :  952
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  760
-		Skeleton stats:  
-			Total Influencers:  476
-			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  476
-			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  1904
-	processing begun of mesh:  Ybot_head
-		processing begun of material:  ybot_body
-		registered as also a user of material:  ybot_body
-		Custom split normals with tangents being used
-		num positions      :  1427
-		num normals        :  1427
-		num tangents       :  5708
-		num uvs            :  2854
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  1610
-		Skeleton stats:  
-			Total Influencers:  1427
-			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  1427
-			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  5708
-	processing begun of mesh:  Ybot_body_lower
-		processing begun of material:  ybot_body
-		registered as also a user of material:  ybot_body
-		Custom split normals with tangents being used
-		num positions      :  11376
-		num normals        :  11376
-		num tangents       :  45504
-		num uvs            :  22752
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  12858
-		Skeleton stats:  
-			Total Influencers:  13806
-			Avg # of influencers per vertex:  1.2136
-			Highest # of influencers observed:  3, num vertices with this:  1161
-			exported as 3 influencers
-			num skeletonWeights and skeletonIndices:  45504
-	processing begun of mesh:  Ybot_joints_lower
-		processing begun of material:  ybot_joints
-		registered as also a user of material:  ybot_joints
-		Custom split normals with tangents being used
-		num positions      :  4265
-		num normals        :  4265
-		num tangents       :  17060
-		num uvs            :  8530
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  6840
-		Skeleton stats:  
-			Total Influencers:  4265
-			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  4265
-			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  17060
+			num skeletonWeights and skeletonIndices:  54572
 ========= Writing of JSON file started =========
-	writing mesh:  Ybot_body_upper
-	writing mesh:  Ybot_joints_upper
-	writing mesh:  Ybot_neck
-	writing mesh:  Ybot_head
-	writing mesh:  Ybot_body_lower
-	writing mesh:  Ybot_joints_lower
+	writing mesh:  Alpha_Surface
+	writing mesh:  Alpha_Joints
 ========= Writing of JSON file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 13.2079 secs
+elapsed time:  0 min, 12.9176 secs

@@ -33,10 +33,12 @@ export class AvatarTransforms
         this.scene = scene;
         this.nodes = new Map<TransformIndex, TransformNode>();
 
+        // TODO: note, the specific rotations are to match the skeleton imported
+        // by the user. This is not robust and should be changed to be more flexible.
 
         // Setup skeleton hierarchy...
         const root = new TransformNode("avatar_root", this.scene);
-        root.position = new Vector3(0, 0, 0);
+        root.rotation = Vector3.Zero();
         this.nodes.set(TransformIndex.ROOT, root);
 
         const head = new TransformNode("avatar_head", this.scene);
@@ -46,7 +48,9 @@ export class AvatarTransforms
 
         const leftShoulder = new TransformNode("avatar_leftShoulder", this.scene);
         leftShoulder.setParent(root);
-        leftShoulder.rotation = new Vector3(0, Math.PI, Math.PI/2.0);
+        // leftShoulder.rotation = new Vector3(0, Math.PI, Math.PI/2.0);
+        // leftShoulder.rotation = new Vector3(0, 0, Math.PI/2.0);
+        leftShoulder.rotation = Vector3.Zero();
         this.nodes.set(TransformIndex.LEFT_SHOULDER, leftShoulder);
 
         const leftElbow = new TransformNode("avatar_leftElbow", this.scene);
@@ -61,7 +65,9 @@ export class AvatarTransforms
 
         const rightShoulder = new TransformNode("avatar_rightShoulder", this.scene);
         rightShoulder.setParent(root);
-        rightShoulder.rotation = new Vector3(0, 0, Math.PI/2.0);
+        // rightShoulder.rotation = new Vector3(0, 0, Math.PI/2.0);
+        // rightShoulder.rotation = new Vector3(0, 0, -Math.PI/2.0);
+        rightShoulder.rotation = Vector3.Zero();
         this.nodes.set(TransformIndex.RIGHT_SHOULDER, rightShoulder);
 
         const rightElbow = new TransformNode("avatar_rightElbow", this.scene);
@@ -96,13 +102,21 @@ export class AvatarTransforms
         root.position = new Vector3(root.position.x, m.shoulderHeight, root.position.z);
         head.position = new Vector3(0, m.shoulderToEyeOffset, 0);
 
+        // leftShoulder.position = new Vector3(m.leftShoulderOffset, 0, 0);
+        // leftElbow.position = new Vector3(0, m.upperArmLength, 0);
+        // leftWrist.position = new Vector3(0, m.foreArmLength, 0);
+        //
+        // rightShoulder.position = new Vector3(m.rightShoulderOffset, 0, 0);
+        // rightElbow.position = new Vector3(0, m.upperArmLength, 0);
+        // rightWrist.position = new Vector3(0, m.foreArmLength, 0);
+
         leftShoulder.position = new Vector3(m.leftShoulderOffset, 0, 0);
-        leftElbow.position = new Vector3(0, m.upperArmLength, 0);
-        leftWrist.position = new Vector3(0, m.foreArmLength, 0);
+        leftElbow.position = new Vector3(-m.upperArmLength, 0, 0);
+        leftWrist.position = new Vector3(-m.foreArmLength, 0, 0);
 
         rightShoulder.position = new Vector3(m.rightShoulderOffset, 0, 0);
-        rightElbow.position = new Vector3(0, m.upperArmLength, 0);
-        rightWrist.position = new Vector3(0, m.foreArmLength, 0);
+        rightElbow.position = new Vector3(m.upperArmLength, 0, 0);
+        rightWrist.position = new Vector3(m.foreArmLength, 0, 0);
 
         this.mostRecentMeasurements = m;
     }

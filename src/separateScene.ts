@@ -11,6 +11,8 @@ import { CalibrationGuide, IKAvatar } from "./ikAvatar";
 
 import { SkeletonBones } from "./skeletonBones";
 
+import { Utilities } from "./utilities";
+
 // Babylon imports.
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { AssetsManager, MeshAssetTask, SmartArray } from "@babylonjs/core";
@@ -291,12 +293,11 @@ export class SeparateScene
 
                     const meshRoot = new TransformNode("mesh_root");
                     meshRoot.position = Vector3.Zero();
-
+                    meshRoot.rotation = Vector3.Zero();
                     for (let mesh of task.loadedMeshes)
                     {
                         mesh.setParent(meshRoot);
                     }
-
                     meshRoot.scaling = Vector3.One().scale(0.01);
 
                     this.ikAvatar!.bindSkeletalMesh(meshRoot, task.loadedSkeletons[0], bones);
