@@ -543,7 +543,7 @@ export class IKAvatar
     // Sets up the GUI with a default transform.
     private setupCalibrationUIWithDefaults() : void
     {
-        this.setupCalibrationUI(new Vector3(0, 1, 2), new Vector3(0, 0, 0), new Vector3(0.8, 0.4, 1.0), this.calibrationAvatarRoot);
+        this.setupCalibrationUI(new Vector3(0, 1, 1.2), new Vector3(0, 0, 0), new Vector3(0.8, 0.4, 1.0), this.calibrationAvatarRoot);
     }
 
     // Sets up the GUI with a specified transform and parent.

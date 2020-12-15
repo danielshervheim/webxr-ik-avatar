@@ -146,7 +146,7 @@ export class BasicScene
                 "YBot_Celebrate"
             );
             this.ikAvatar.registerCalibrationAvatarFromMeshTask(task,
-                boneDictionary, animationDictionary, new Vector3(0, 0, 3),
+                boneDictionary, animationDictionary, new Vector3(0, 0, 1.5),
                 new Vector3(0, 0, 0), Vector3.One().scale(0.01));
         }
 
