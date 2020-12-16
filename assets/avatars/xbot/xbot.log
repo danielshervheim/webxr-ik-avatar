@@ -82,24 +82,27 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		processing begun of bone:  mixamorig:LeftToe_End, index:  66
 		processing action Armature.001|mixamo.com|Layer0:  in[1 - 61], out[0 - 61]
 		processing action Armature|mixamo.com|Layer0:  in[1 - 2], out[70 - 72]
-	processing begun of mesh:  xbot_body_arms
+	processing begun of mesh:  xbot_arms
 		processing begun of material:  xbot_body
+		processing begun of material:  xbot_joints
+		processing begun of multimaterial:  xbot.Multimaterial#0
 		Custom split normals with tangents being used
-		num positions      :  16633
-		num normals        :  16633
-		num tangents       :  66532
-		num uvs            :  33266
+		num positions      :  25059
+		num normals        :  25059
+		num tangents       :  100236
+		num uvs            :  50118
 		num uvs2           :  0
 		num colors         :  0
-		num triangles      :  16172
+		num triangles      :  28652
 		Skeleton stats:  
-			Total Influencers:  16633
+			Total Influencers:  25059
 			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  16633
+			Highest # of influencers observed:  1, num vertices with this:  25059
 			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  66532
+			num skeletonWeights and skeletonIndices:  100236
 	processing begun of mesh:  xbot_joints_mid
 		processing begun of material:  xbot_joints
+		registered as also a user of material:  xbot_joints
 		Custom split normals with tangents being used
 		num positions      :  476
 		num normals        :  476
@@ -199,32 +202,14 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 			Highest # of influencers observed:  4, num vertices with this:  365
 			exported as 4 influencers
 			num skeletonWeights and skeletonIndices:  19192
-	processing begun of mesh:  xbot_joints_arms
-		processing begun of material:  xbot_joints
-		registered as also a user of material:  xbot_joints
-		Custom split normals with tangents being used
-		num positions      :  8426
-		num normals        :  8426
-		num tangents       :  33704
-		num uvs            :  16852
-		num uvs2           :  0
-		num colors         :  0
-		num triangles      :  12480
-		Skeleton stats:  
-			Total Influencers:  8426
-			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  8426
-			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  33704
 ========= Writing of JSON file started =========
-	writing mesh:  xbot_body_arms
+	writing mesh:  xbot_arms
 	writing mesh:  xbot_joints_mid
 	writing mesh:  xbot_joints_upper
 	writing mesh:  xbot_joints_lower
 	writing mesh:  xbot_body_upper
 	writing mesh:  xbot_body_lower
 	writing mesh:  xbot_body_mid
-	writing mesh:  xbot_joints_arms
 ========= Writing of JSON file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 12.873 secs
+elapsed time:  0 min, 12.6475 secs

@@ -49,4 +49,22 @@ export class Mirror
     {
         this.texture.renderList!.push(mesh);
     }
+
+    public update( newPosition: Vector3, newRotation: Vector3, scene: Scene) : void
+    {
+        this.mesh.position.addInPlace( newPosition.scale(-1));
+
+        // Compute the reflection normal.
+        this.mesh.computeWorldMatrix(true);
+        let worldMatrix = this.mesh.getWorldMatrix();
+        let vertexData = this.mesh.getVerticesData("normal");
+        let normal = new Vector3(vertexData![0], vertexData![1], vertexData![2]);
+        normal = Vector3.TransformNormal(normal, worldMatrix).scale(-1.0);
+
+        // Create the mirror texture.
+        this.texture.mirrorPlane = Plane.FromPositionAndNormal(this.mesh.position, normal);
+
+        // Create the mirror material.
+        this.material.reflectionTexture = this.texture;
+    }
 }

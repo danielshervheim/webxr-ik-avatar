@@ -4,12 +4,17 @@
  * License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
  */
 
-import { StudioSceneCCD } from "./studioSceneCCD";
-import { BasicSceneCCD } from "./basicSceneCCD";
+import { StudioSceneCCD } from "./studioScene_CCD";
+import { BasicSceneCCD } from "./basicScene_CCD";
+
+import { StudioSceneBoneIK } from "./studioScene_BoneIK";
+import { BasicSceneBoneIK } from "./basicScene_BoneIK";
 
 // Instantiate a scene.
-let scene = new StudioSceneCCD();
+let scene = new BasicSceneBoneIK();
+// let scene = new StudioSceneBoneIK();
 // let scene = new BasicSceneCCD();
+// let scene = new StudioSceneCCD();
 
 // Start running it.
 scene.start();

@@ -1,0 +1,157 @@
+Exporter version: 6.4.6, Blender version: 2.83.5
+========= Conversion from Blender to Babylon.js =========
+	Scene settings used :
+		Inline textures     :  false
+		Material Type       :  PBR
+		Positions Precision :  4
+		Normals Precision   :  3
+		UVs Precision       :  3
+		Vert Color Precision:  3
+		Mat Weight Precision:  2
+		Keep Z-up r-handed  :  no
+		Texture directory   :  /Users/danielshervheim/Documents/Github/f20-5619/VR-Avatar-IK/assets/xbot/
+	Python World class constructor completed
+	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
+	processing begun of skeleton:  Xbot_UpperBody, id:  0
+		processing begun of bone:  mixamorig:Hips, index:  0
+		processing begun of bone:  mixamorig:Spine, index:  1
+		processing begun of bone:  mixamorig:Spine1, index:  2
+		processing begun of bone:  mixamorig:Spine2, index:  3
+		processing begun of bone:  mixamorig:Neck, index:  4
+		processing begun of bone:  mixamorig:Head, index:  5
+		processing begun of bone:  mixamorig:HeadTop_End, index:  6
+		processing begun of bone:  mixamorig:LeftEye, index:  7
+		processing begun of bone:  mixamorig:RightEye, index:  8
+		processing begun of bone:  mixamorig:LeftShoulder, index:  9
+		processing begun of bone:  mixamorig:LeftArm, index:  10
+		processing begun of bone:  mixamorig:LeftForeArm, index:  11
+		processing begun of bone:  mixamorig:LeftHand, index:  12
+		processing begun of bone:  mixamorig:LeftHandMiddle1, index:  13
+		processing begun of bone:  mixamorig:LeftHandMiddle2, index:  14
+		processing begun of bone:  mixamorig:LeftHandMiddle3, index:  15
+		processing begun of bone:  mixamorig:LeftHandMiddle4, index:  16
+		processing begun of bone:  mixamorig:LeftHandThumb1, index:  17
+		processing begun of bone:  mixamorig:LeftHandThumb2, index:  18
+		processing begun of bone:  mixamorig:LeftHandThumb3, index:  19
+		processing begun of bone:  mixamorig:LeftHandThumb4, index:  20
+		processing begun of bone:  mixamorig:LeftHandIndex1, index:  21
+		processing begun of bone:  mixamorig:LeftHandIndex2, index:  22
+		processing begun of bone:  mixamorig:LeftHandIndex3, index:  23
+		processing begun of bone:  mixamorig:LeftHandIndex4, index:  24
+		processing begun of bone:  mixamorig:LeftHandRing1, index:  25
+		processing begun of bone:  mixamorig:LeftHandRing2, index:  26
+		processing begun of bone:  mixamorig:LeftHandRing3, index:  27
+		processing begun of bone:  mixamorig:LeftHandRing4, index:  28
+		processing begun of bone:  mixamorig:LeftHandPinky1, index:  29
+		processing begun of bone:  mixamorig:LeftHandPinky2, index:  30
+		processing begun of bone:  mixamorig:LeftHandPinky3, index:  31
+		processing begun of bone:  mixamorig:LeftHandPinky4, index:  32
+		processing begun of bone:  mixamorig:RightShoulder, index:  33
+		processing begun of bone:  mixamorig:RightArm, index:  34
+		processing begun of bone:  mixamorig:RightForeArm, index:  35
+		processing begun of bone:  mixamorig:RightHand, index:  36
+		processing begun of bone:  mixamorig:RightHandMiddle1, index:  37
+		processing begun of bone:  mixamorig:RightHandMiddle2, index:  38
+		processing begun of bone:  mixamorig:RightHandMiddle3, index:  39
+		processing begun of bone:  mixamorig:RightHandMiddle4, index:  40
+		processing begun of bone:  mixamorig:RightHandThumb1, index:  41
+		processing begun of bone:  mixamorig:RightHandThumb2, index:  42
+		processing begun of bone:  mixamorig:RightHandThumb3, index:  43
+		processing begun of bone:  mixamorig:RightHandThumb4, index:  44
+		processing begun of bone:  mixamorig:RightHandIndex1, index:  45
+		processing begun of bone:  mixamorig:RightHandIndex2, index:  46
+		processing begun of bone:  mixamorig:RightHandIndex3, index:  47
+		processing begun of bone:  mixamorig:RightHandIndex4, index:  48
+		processing begun of bone:  mixamorig:RightHandRing1, index:  49
+		processing begun of bone:  mixamorig:RightHandRing2, index:  50
+		processing begun of bone:  mixamorig:RightHandRing3, index:  51
+		processing begun of bone:  mixamorig:RightHandRing4, index:  52
+		processing begun of bone:  mixamorig:RightHandPinky1, index:  53
+		processing begun of bone:  mixamorig:RightHandPinky2, index:  54
+		processing begun of bone:  mixamorig:RightHandPinky3, index:  55
+		processing begun of bone:  mixamorig:RightHandPinky4, index:  56
+		processing begun of bone:  mixamorig:RightUpLeg, index:  57
+		processing begun of bone:  mixamorig:RightLeg, index:  58
+		processing begun of bone:  mixamorig:RightFoot, index:  59
+		processing begun of bone:  mixamorig:RightToeBase, index:  60
+		processing begun of bone:  mixamorig:RightToe_End, index:  61
+		processing begun of bone:  mixamorig:LeftUpLeg, index:  62
+		processing begun of bone:  mixamorig:LeftLeg, index:  63
+		processing begun of bone:  mixamorig:LeftFoot, index:  64
+		processing begun of bone:  mixamorig:LeftToeBase, index:  65
+		processing begun of bone:  mixamorig:LeftToe_End, index:  66
+		processing action XbotTPose:  in[1 - 2], out[0 - 2]
+	processing begun of mesh:  Xbot_body
+		processing begun of material:  xbot_body
+		Custom split normals with tangents being used
+		num positions      :  21431
+		num normals        :  21431
+		num tangents       :  85724
+		num uvs            :  42862
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  21274
+		Skeleton stats:  
+			Total Influencers:  29064
+			Avg # of influencers per vertex:  1.3562
+			Highest # of influencers observed:  4, num vertices with this:  365
+			exported as 4 influencers
+			num skeletonWeights and skeletonIndices:  85724
+	processing begun of mesh:  Xbot_joints
+		processing begun of material:  xbot_joints
+		Custom split normals with tangents being used
+		num positions      :  8912
+		num normals        :  8912
+		num tangents       :  35648
+		num uvs            :  17824
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  13240
+		Skeleton stats:  
+			Total Influencers:  8912
+			Avg # of influencers per vertex:  1
+			Highest # of influencers observed:  1, num vertices with this:  8912
+			exported as 1 influencers
+			num skeletonWeights and skeletonIndices:  35648
+	processing begun of mesh:  Xbot_neck
+		processing begun of material:  xbot_joints
+		registered as also a user of material:  xbot_joints
+		Custom split normals with tangents being used
+		num positions      :  476
+		num normals        :  476
+		num tangents       :  1904
+		num uvs            :  952
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  760
+		Skeleton stats:  
+			Total Influencers:  476
+			Avg # of influencers per vertex:  1
+			Highest # of influencers observed:  1, num vertices with this:  476
+			exported as 1 influencers
+			num skeletonWeights and skeletonIndices:  1904
+	processing begun of mesh:  Xbot_Head
+		processing begun of material:  xbot_body
+		registered as also a user of material:  xbot_body
+		Custom split normals with tangents being used
+		num positions      :  1427
+		num normals        :  1427
+		num tangents       :  5708
+		num uvs            :  2854
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  1610
+		Skeleton stats:  
+			Total Influencers:  1427
+			Avg # of influencers per vertex:  1
+			Highest # of influencers observed:  1, num vertices with this:  1427
+			exported as 1 influencers
+			num skeletonWeights and skeletonIndices:  5708
+========= Writing of JSON file started =========
+	writing mesh:  Xbot_body
+	writing mesh:  Xbot_joints
+	writing mesh:  Xbot_neck
+	writing mesh:  Xbot_Head
+========= Writing of JSON file completed =========
+========= end of processing =========
+elapsed time:  0 min, 8.223 secs
