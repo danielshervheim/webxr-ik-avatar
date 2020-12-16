@@ -361,7 +361,7 @@ export class BasicSceneBoneIK
             this.ikAvatar.initialize();
 
             // Show the debug layer
-            this.scene.debugLayer.show();
+            // this.scene.debugLayer.show();
         }
     }
 

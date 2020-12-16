@@ -450,7 +450,7 @@ export class StudioSceneBoneIK
             this.scene.environmentIntensity = 1.5;
 
             // Show the debug layer.
-            this.scene.debugLayer.show();
+            // this.scene.debugLayer.show();
         }
     }
 

@@ -529,7 +529,7 @@ export class StudioSceneCCD
         this.scene.imageProcessingConfiguration.contrast = 1.5;
         this.scene.environmentIntensity = 1.5;
 
-        this.scene.debugLayer.show();
+        // this.scene.debugLayer.show();
     }
 
     private update() : void

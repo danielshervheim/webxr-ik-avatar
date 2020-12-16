@@ -465,7 +465,7 @@ export class BasicSceneCCD
         }
         assetsManager.load();
 
-        this.scene.debugLayer.show();
+        // this.scene.debugLayer.show();
     }
 
     private update() : void
