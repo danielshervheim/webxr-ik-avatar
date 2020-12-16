@@ -20,6 +20,7 @@ export class Mirror
         this.mesh = MeshBuilder.CreatePlane(name + "_mirrorPlane", {width: width, height: height}, scene);
         this.mesh.position = position;
         this.mesh.rotation = rotation;
+        this.mesh.scaling = scaling;
 
         // Compute the reflection normal.
         this.mesh.computeWorldMatrix(true);

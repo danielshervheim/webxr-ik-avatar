@@ -1,0 +1,606 @@
+{
+  "accessors": [
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        55.015674591064453,
+        47.636260986328125,
+        80.213920593261719
+      ],
+      "min": [
+        -55.792236328125,
+        -52.96954345703125,
+        -5.1469664573669434
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 6600,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.99974453449249268,
+        0.99956649541854858,
+        0.99907296895980835
+      ],
+      "min": [
+        -0.99897938966751099,
+        -0.99935966730117798,
+        -0.99942374229431152
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.99980777502059937,
+        1,
+        0.9991191029548645,
+        1
+      ],
+      "min": [
+        -0.99958300590515137,
+        -1,
+        -0.99897032976150513,
+        1
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.24719999730587006,
+        0.98052191734313965
+      ],
+      "min": [
+        0.00279999990016222,
+        0.50209999084472656
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 4400,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.24719999730587006,
+        0.98052191734313965
+      ],
+      "min": [
+        0.00279999990016222,
+        0.50209999084472656
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 8800,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.24719999730587006,
+        0.98052191734313965
+      ],
+      "min": [
+        0.00279999990016222,
+        0.50209999084472656
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 13200,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.24719999730587006,
+        0.98052191734313965
+      ],
+      "min": [
+        0.00279999990016222,
+        0.50209999084472656
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 17600,
+      "componentType": 5126,
+      "count": 550,
+      "max": [
+        0.24719999730587006,
+        0.98052191734313965
+      ],
+      "min": [
+        0.00279999990016222,
+        0.50209999084472656
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "componentType": 5125,
+      "count": 2184,
+      "max": [
+        549
+      ],
+      "min": [
+        0
+      ],
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 13200,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        100.46351623535156,
+        114.25817108154297,
+        66.155059814453125
+      ],
+      "min": [
+        -92.387741088867188,
+        -55.608757019042969,
+        -29.974397659301758
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 19428,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.87677264213562012,
+        0.88517022132873535,
+        0.99853074550628662
+      ],
+      "min": [
+        -0.95376503467559814,
+        -0.86994969844818115,
+        -0.33928641676902771
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 3,
+      "byteOffset": 8800,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.99579095840454102,
+        0.97478699684143066,
+        0.63982641696929932,
+        1
+      ],
+      "min": [
+        -0.98088878393173218,
+        -0.99991703033447266,
+        -0.87633836269378662,
+        -1
+      ],
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 22000,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.97649490833282471,
+        0.98119270801544189
+      ],
+      "min": [
+        0.0055040810257196426,
+        0.0080104842782020569
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 26152,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.97649490833282471,
+        0.98119270801544189
+      ],
+      "min": [
+        0.0055040810257196426,
+        0.0080104842782020569
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 30304,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.97649490833282471,
+        0.98119270801544189
+      ],
+      "min": [
+        0.0055040810257196426,
+        0.0080104842782020569
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 34456,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.97649490833282471,
+        0.98119270801544189
+      ],
+      "min": [
+        0.0055040810257196426,
+        0.0080104842782020569
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 38608,
+      "componentType": 5126,
+      "count": 519,
+      "max": [
+        0.97649490833282471,
+        0.98119270801544189
+      ],
+      "min": [
+        0.0055040810257196426,
+        0.0080104842782020569
+      ],
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 8736,
+      "componentType": 5125,
+      "count": 2028,
+      "max": [
+        518
+      ],
+      "min": [
+        0
+      ],
+      "type": "SCALAR"
+    }
+  ],
+  "asset": {
+    "extras": {
+      "author": "alint (https://sketchfab.com/alint)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/models/3ee280726f1f496e9b2377d43b4cbb2d",
+      "title": "Tropical Plant"
+    },
+    "generator": "Sketchfab-4.1.5",
+    "version": "2.0"
+  },
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 16848,
+      "byteOffset": 0,
+      "name": "floatBufferViews",
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteLength": 42760,
+      "byteOffset": 16848,
+      "byteStride": 8,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 25656,
+      "byteOffset": 59608,
+      "byteStride": 12,
+      "name": "floatBufferViews",
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteLength": 17104,
+      "byteOffset": 85264,
+      "byteStride": 16,
+      "name": "floatBufferViews",
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 102368,
+      "uri": "scene.bin"
+    }
+  ],
+  "extensionsRequired": [
+    "KHR_materials_pbrSpecularGlossiness"
+  ],
+  "extensionsUsed": [
+    "KHR_materials_pbrSpecularGlossiness"
+  ],
+  "images": [
+    {
+      "uri": "textures/tropical_plant_diffuse.png"
+    },
+    {
+      "uri": "textures/tropical_plant_specularGlossiness.png"
+    }
+  ],
+  "materials": [
+    {
+      "alphaMode": "BLEND",
+      "doubleSided": true,
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "extensions": {
+        "KHR_materials_pbrSpecularGlossiness": {
+          "diffuseFactor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "diffuseTexture": {
+            "index": 0,
+            "texCoord": 0
+          },
+          "glossinessFactor": 1,
+          "specularFactor": [
+            0,
+            0,
+            0
+          ],
+          "specularGlossinessTexture": {
+            "index": 1,
+            "texCoord": 0
+          }
+        }
+      },
+      "name": "tropical_plant"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "trunk_tropical_plant_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 0,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3,
+            "TEXCOORD_1": 4,
+            "TEXCOORD_2": 5,
+            "TEXCOORD_3": 6,
+            "TEXCOORD_4": 7
+          },
+          "indices": 8,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "leaves_tropical_plant_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 10,
+            "POSITION": 9,
+            "TANGENT": 11,
+            "TEXCOORD_0": 12,
+            "TEXCOORD_1": 13,
+            "TEXCOORD_2": 14,
+            "TEXCOORD_3": 15,
+            "TEXCOORD_4": 16
+          },
+          "indices": 17,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "children": [
+        1
+      ],
+      "name": "RootNode (gltf orientation matrix)",
+      "rotation": [
+        -0.70710678118654746,
+        -0,
+        -0,
+        0.70710678118654757
+      ]
+    },
+    {
+      "children": [
+        2
+      ],
+      "name": "RootNode (model correction matrix)"
+    },
+    {
+      "children": [
+        3
+      ],
+      "matrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "name": "7d910dab59a049d3996af71d3828b651.fbx"
+    },
+    {
+      "children": [
+        4,
+        7
+      ],
+      "name": "RootNode"
+    },
+    {
+      "children": [
+        5
+      ],
+      "matrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        2.2204460492503131e-16,
+        -1,
+        0,
+        0,
+        1,
+        2.2204460492503131e-16,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "name": "trunk"
+    },
+    {
+      "children": [
+        6
+      ],
+      "matrix": [
+        1,
+        0,
+        -0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3.5398674011230469,
+        0.18736596405506134,
+        0.17966651916503906,
+        1
+      ],
+      "name": ""
+    },
+    {
+      "mesh": 0,
+      "name": "trunk_tropical_plant_0"
+    },
+    {
+      "children": [
+        8
+      ],
+      "matrix": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        2.2204460492503131e-16,
+        -1,
+        0,
+        0,
+        1,
+        2.2204460492503131e-16,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "name": "leaves"
+    },
+    {
+      "children": [
+        9
+      ],
+      "matrix": [
+        1,
+        0,
+        -0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        -0.43608689308166504,
+        -35.320163726806641,
+        27.887182235717773,
+        1
+      ],
+      "name": ""
+    },
+    {
+      "mesh": 1,
+      "name": "leaves_tropical_plant_0"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "OSG_Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    }
+  ]
+}
+

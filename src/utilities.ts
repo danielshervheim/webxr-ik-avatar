@@ -11,6 +11,27 @@ export class Utilities
         return Math.min(Math.max(v, 0), 1);
     }
 
+    // Clamps the given value between min and max.
+    static Clamp(v: number, min: number, max: number): number
+    {
+        return Math.min(Math.max(v, min), max);
+    }
+
+    // Returns the arccosine of the given value, but safely catches values outside
+    // the [-1, 1] range. Returns PI for values < -1, and 0 for values > 1.
+    static SafeAcos(v: number)
+    {
+        const acos = Math.acos(v);
+        if (isNaN(acos))
+        {
+            return v < 0 ? Math.PI : 0.0;
+        }
+        else
+        {
+            return acos;
+        }
+    }
+
     // Constructs a Quaternion rotation from the given forward and up directions.
     static LookRotation(forward: Vector3, up: Vector3) : Quaternion
     {
