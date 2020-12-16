@@ -10,7 +10,7 @@ You should fill out this information before submitting your assignment.  Make su
 
 Names: Daniel Shervheim and Alexander Gullickson
 
-UMN Email: sherv029@umn.edu and gulli172@umn.edu
+UMN Email: sherv029@umn.edu and gulli173@umn.edu
 
 Build URLs:
 The build URLs are broken down into key section to showcase our work. The Calibration URL will enable assessment on the calibration UI and quality of calibration. Then, the URLs are broken down between a basic and complex scene for both the BabylonJS BoneIKController implementation and our own CCD implementation. This allows assessment on the quality of each of them in both a basic scene and determine how well they work in a scene more indicative of an actual environment where the avatars would be used.
@@ -26,7 +26,7 @@ Third Party Assets:
 
 | Asset Type | Asset Descriptor | Asset Link |
 | - | - | - |
-| Model | Avatar and Calibration Models | [Mixamo YBot](http://mixamo.com) |
+| Model | Avatar and Calibration Models (Default Mixamo Avatar) | [Mixamo YBot](http://mixamo.com) |
 | Model | Studio Environment | [Marcin Lubecki](https://sketchfab.com/3d-models/apartment-interior-design-vr-ready-ce102c29aaf84a05a8607b2ac947728d) |
 
 ## Tasks Implemented
@@ -43,7 +43,7 @@ Third Party Assets:
 
 3. Get Body Forward Direction:
 
-    The Body forward direction procedure was necessary to orient the user avatars torso in the general position of the user. Since there is no torso tracking, this needs to be approximated based on the user's head and hand positions. The general implementation of which was taken from this article (TODO:LINK). The gist of how it works is the average head forward vector is acquired from the last 50 frames. Additionally, the average forward vector of the controllers needs to be determined. This is done by effectively drawing a line between the two controllers positions. The cross product is then taken between the controllers line and a vector pointing straight down to get the forward direction perpendicular to the controllers line. The bodies forward direction is then updated when the headset forward direction and controllers forward direction are within 23 degrees of each other.
+    The Body forward direction procedure was necessary to orient the user avatars torso in the general position of the user. Since there is no torso tracking, this needs to be approximated based on the user's head and hand positions. The general implementation of which was taken from this article ["Real-time Full-body Motion Reconstruction and Recognition for Off-the-Shelf VR Devices"](https://dl-acm-org.ezp1.lib.umn.edu/doi/pdf/10.1145/3013971.3013987). The gist of how it works is the average head forward vector is acquired from the last 50 frames. Additionally, the average forward vector of the controllers needs to be determined. This is done by effectively drawing a line between the two controllers positions. The cross product is then taken between the controllers line and a vector pointing straight down to get the forward direction perpendicular to the controllers line. The bodies forward direction is then updated when the headset forward direction and controllers forward direction are within 23 degrees of each other.
 
 4. Avatar Head and User Movement:
 
