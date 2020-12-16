@@ -12,6 +12,7 @@ import { Mirror } from "./mirror";
 
 // Babylon imports.
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { LinesMesh } from "@babylonjs/core/Meshes/linesMesh"
 import { AssetsManager, SmartArray } from "@babylonjs/core";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3, Vector3 } from "@babylonjs/core/Maths/math";
@@ -24,6 +25,9 @@ import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
 import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
+import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllercomponent";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Ray } from "@babylonjs/core/Culling/ray";
 
 // Side effects.
 import "@babylonjs/core/Helpers/sceneHelpers";
@@ -50,6 +54,14 @@ export class StudioScene
 
     private lightmapDictionary : { [id: string] : Array<string>; } = {};
     private lightmapTextures : { [id: string] : Texture | null } = {};
+    //Teleportation
+    private worldTransform: TransformNode;
+    private rightController: WebXRInputSource | null;
+    private laserPointer: LinesMesh | null;
+    private teleportPoint: Vector3 | null;
+    private teleportTransform: TransformNode;
+    private groundMeshes: Array<AbstractMesh>;
+    private mirrors: SmartArray<Mirror>;
 
     constructor()
     {
@@ -115,6 +127,16 @@ export class StudioScene
 
         // Initialize a new IKAvatar instance.
         this.ikAvatar = new IKAvatar(this.scene);
+
+        this.rightController   = null;
+        this.laserPointer      = null;
+        this.teleportPoint     = null;
+        this.worldTransform    = new TransformNode("World", this.scene);
+        this.teleportTransform = new TransformNode("teleportIndicator", this.scene);
+        this.teleportTransform.setEnabled( false );
+        this.groundMeshes = [];
+
+        this.mirrors = new SmartArray<Mirror>(4);
     }
 
     start() : void
@@ -156,6 +178,36 @@ export class StudioScene
         // Disable teleportation and the laser pointer
         xrHelper.teleportation.dispose();
         xrHelper.pointerSelection.dispose();
+        // Create points for the laser pointer
+        var laserPoints = [];
+        laserPoints.push(new Vector3(0, 0, 0));
+        laserPoints.push(new Vector3(0, 0, 1));
+
+        // Create a laser pointer and make sure it is not pickable
+        this.laserPointer            = MeshBuilder.CreateLines("laserPointer", {points: laserPoints}, this.scene);
+        this.laserPointer.color      = Color3.White();
+        this.laserPointer.alpha      = .5;
+        this.laserPointer.visibility = 0;
+        this.laserPointer.isPickable = false;
+
+        // Attach the laser pointer to the right controller when it is connected
+        xrHelper.input.onControllerAddedObservable.add((inputSource) => {
+            if(inputSource.uniqueId.endsWith("right"))
+            {
+                this.rightController = inputSource;
+                this.laserPointer!.parent = this.rightController.pointer;
+            }
+        });
+
+        // Don't forget to deparent the laser pointer or it will be destroyed!
+        xrHelper.input.onControllerRemovedObservable.add((inputSource) => {
+
+            if(inputSource.uniqueId.endsWith("right"))
+            {
+                this.laserPointer!.parent = null;
+                this.laserPointer!.visibility = 0;
+            }
+        });
 
         // Register the XR Helper with the IKAvatar.
         this.ikAvatar.registerXRExperience(xrHelper);
@@ -171,11 +223,24 @@ export class StudioScene
         // Make sure the environment and skybox is not pickable!
         environment!.skybox!.isPickable = false;
 
+        // Teleportation Target
+        var teleportTarget            = MeshBuilder.CreateTorus("teleTarget", { diameter: 1, thickness: 0.2, tessellation: 20 }, this.scene);
+            teleportTarget.isPickable = false;
+            teleportTarget.position   = new Vector3(0,0.1,0);
+            teleportTarget.parent     = this.teleportTransform;
+
+        var teleportMaterial                 = new StandardMaterial("teleportTarget", this.scene);
+            teleportMaterial.specularColor   = Color3.Black();
+            teleportMaterial.emissiveColor   = new Color3(0,0.5,1);
+            teleportMaterial.backFaceCulling = false;
+            teleportTarget.material          = teleportMaterial;
+
         // Create an AssetManager to load in data.
         let assetsManager = new AssetsManager(this.scene);
 
         // Load the avatar mesh and register the loaded avatar mesh with the IKAvatar.
-        let avatarTask = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        // let avatarTask = assetsManager.addMeshTask( "avatar task", "", "assets/HVGirl.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        let avatarTask = assetsManager.addMeshTask("avatar task", "", "assets/ybot/ybot.babylon", "");
         avatarTask.onSuccess = (task) =>
         {
             let boneDictionary = new BoneDictionary(
@@ -196,13 +261,14 @@ export class StudioScene
                 "YBot_Celebrate"
             );
             this.ikAvatar.registerCalibrationAvatarFromMeshTask(task,
-                boneDictionary, animationDictionary, new Vector3(0, 0, 3),
+                boneDictionary, animationDictionary, new Vector3(0, 0, 1.5),
                 new Vector3(0, 0, 0), Vector3.One().scale(0.01));
         }
 
 
         // Load the user mesh and register it with the IKAvatar.
-        let userTask = assetsManager.addMeshTask( "user task", "", "assets/userAvatar.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        // let userTask = assetsManager.addMeshTask( "user task", "", "assets/userAvatar.glb", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
+        let userTask = assetsManager.addMeshTask( "user task", "", "assets/xbot/xbot.babylon", "" );    //.addMeshTask("avatar task", "", "assets/world.glb", "");
         userTask.onSuccess = (task) =>
         {
             let boneDictionary = new BoneDictionary(
@@ -237,9 +303,7 @@ export class StudioScene
         }
 
         // Create the mirrors.
-        let mirrors: SmartArray<Mirror> = new SmartArray<Mirror>(2);
-
-        mirrors.push(new Mirror(
+        this.mirrors.push(new Mirror(
             "mirrorByWall",
             new Vector3(-6.856, 1.943, 4),
             new Vector3(0, 270 * ( Math.PI / 180 ), 0),
@@ -250,7 +314,7 @@ export class StudioScene
             this.scene
         ));
 
-        mirrors.push(new Mirror(
+        this.mirrors.push(new Mirror(
             "mirrorByDoor",
             new Vector3( -2.9, 1.873, 10.020 ),
             new Vector3(0, 0, 0),
@@ -262,7 +326,7 @@ export class StudioScene
         ));
 
         // Register the skybox with all mirrors.
-        mirrors.forEach((mirror: Mirror)=>
+        this.mirrors.forEach((mirror: Mirror)=>
         {
             mirror.render(environment!.skybox!);
         });
@@ -274,6 +338,7 @@ export class StudioScene
             worldTask.loadedMeshes[0].position = new Vector3( 0, 0.001, 0);
             worldTask.loadedMeshes[0].rotation = new Vector3( 0, 0, 0);
             worldTask.loadedMeshes[0].scaling = new Vector3(1.25, 1.25, 1.25);
+            worldTask.loadedMeshes[0].setParent( this.worldTransform );
         }
 
         // Load the assets.
@@ -296,11 +361,15 @@ export class StudioScene
             {
                 worldTask.loadedMeshes.forEach((mesh) =>
                 {
-                    mirrors.forEach((mirror: Mirror) =>
+                    this.mirrors.forEach((mirror: Mirror) =>
                     {
                         mirror.render(mesh);
                     });
 
+                    if( ( mesh.name.startsWith("walls_primitive3") || mesh.name.startsWith("deck_floor") ) )
+                    {
+                        this.groundMeshes.push(mesh);
+                    }
                     /*
                     // Leave in for now as template if loaded asset file needs manipulating
                     // Note this condition will always evaluate true as there are no point or sun meshes
@@ -321,10 +390,11 @@ export class StudioScene
             {
                 userTask.loadedMeshes.forEach((mesh) =>
                 {
-                    mirrors.forEach((mirror: Mirror)=>
+                    this.mirrors.forEach((mirror: Mirror)=>
                     {
                         mirror.render(mesh);
                     });
+                    mesh.isPickable = false;
                 });
             }
 
@@ -334,7 +404,7 @@ export class StudioScene
             {
                 avatarTask.loadedMeshes.forEach((mesh) =>
                 {
-                    mirrors.forEach((mirror: Mirror)=>
+                    this.mirrors.forEach((mirror: Mirror)=>
                     {
                         mirror.render(mesh);
                     });
@@ -389,5 +459,70 @@ export class StudioScene
     {
         // Update the IKAvatar.
         this.ikAvatar.update();
+
+        this.processControllerInput()
+    }
+
+    private processControllerInput()
+    {
+        this.onRightThumbstick(this.rightController?.motionController?.getComponent("xr-standard-thumbstick"));
+    }
+    private onRightThumbstick(component?: WebXRControllerComponent)
+    {
+        if(component?.changes.axes)
+        {
+            // If the thumbstick is moved forward
+            if(component.axes.y < -.75)
+            {
+                // Create a new ray cast
+                var ray = new Ray(this.rightController!.pointer.position, this.rightController!.pointer.forward, 20);
+                var pickInfo = this.scene.pickWithRay(ray);
+
+                // If the ray cast intersected a ground mesh
+                if(pickInfo?.hit && this.groundMeshes.includes(pickInfo.pickedMesh!))
+                {
+                    this.teleportPoint            = pickInfo.pickedPoint;
+                    this.laserPointer!.scaling.z  = pickInfo.distance;
+                    this.laserPointer!.visibility = 1;
+                    if(pickInfo.pickedPoint)
+                    {
+                        this.teleportTransform.position = pickInfo.pickedPoint;
+                        this.teleportTransform.setEnabled(true);
+                    }
+                }
+                else
+                {
+                    this.teleportPoint              = null;
+                    this.laserPointer!.visibility   = 0;
+                    this.teleportTransform.position = Vector3.Zero();
+                    this.teleportTransform.setEnabled(false);
+                }
+            }
+            // If thumbstick returns to the rest position
+            else if(component.axes.y == 0)
+            {
+                this.laserPointer!.visibility = 0;
+
+                // If we have a valid targer point, then teleport the user
+                if(this.teleportPoint)
+                {
+                    this.worldTransform.position.x -= this.teleportPoint.x;
+                    this.worldTransform.position.z -= this.teleportPoint.z;
+                    let mirrorPosition   = this.teleportPoint.clone();
+                        mirrorPosition.y = 0;
+
+                    this.teleportPoint = null;
+
+                    // var cameraRotation = Quaternion.FromEulerAngles(0, this.teleportRot.y, 0);
+                    // this.worldTransform.rotation.y -= this.teleportRot.y;
+                    this.mirrors.forEach((mirror: Mirror) =>
+                    {
+                        mirror.update( mirrorPosition, this.worldTransform.rotation, this.scene);
+                    });
+
+                    this.teleportTransform.setEnabled(false);
+                }
+            }
+        }
     }
 }

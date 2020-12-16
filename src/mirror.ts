@@ -12,6 +12,9 @@ export class Mirror
     private texture: MirrorTexture;
     private material: StandardMaterial;
     private mesh: AbstractMesh;
+    private width: number;
+    private height: number;
+    private resolution: number;
 
     // Constructs a new Mirror instance.
     public constructor(name: string, position: Vector3, rotation: Vector3, scaling: Vector3, width: number, height: number, resolution: number, scene: Scene)
@@ -41,11 +44,34 @@ export class Mirror
 
         // Apply the mirror material to the mesh.
         this.mesh.material = this.material;
+
+        // Store Mirror Properties
+        this.width      = width;
+        this.height     = height;
+        this.resolution = resolution;
     }
 
     // Adds a mesh to be reflected in this mirror.
     public render(mesh: AbstractMesh) : void
     {
         this.texture.renderList!.push(mesh);
+    }
+
+    public update( newPosition: Vector3, newRotation: Vector3, scene: Scene) : void
+    {
+        this.mesh.position.addInPlace( newPosition.scale(-1));
+
+        // Compute the reflection normal.
+        this.mesh.computeWorldMatrix(true);
+        let worldMatrix = this.mesh.getWorldMatrix();
+        let vertexData = this.mesh.getVerticesData("normal");
+        let normal = new Vector3(vertexData![0], vertexData![1], vertexData![2]);
+        normal = Vector3.TransformNormal(normal, worldMatrix).scale(-1.0);
+
+        // Create the mirror texture.
+        this.texture.mirrorPlane = Plane.FromPositionAndNormal(this.mesh.position, normal);
+
+        // Create the mirror material.
+        this.material.reflectionTexture = this.texture;
     }
 }

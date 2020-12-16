@@ -398,6 +398,7 @@ export class IKAvatar
             poleBox.position = new Vector3( 0, 0.484, 0.245 );
             poleBox.setParent( this.userAvatarRoot );
             poleBox.setEnabled( true );
+            poleBox.isPickable = false;
             // Debug poleBox
             // poleBox.renderOutline = true;
             // poleBox.enableEdgesRendering(); // Used to debug pole box location
