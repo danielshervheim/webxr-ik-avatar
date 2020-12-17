@@ -346,12 +346,23 @@ export class BasicSceneCCD
         }
 
         // Load in the player avatar.
-        /*
         // NOTE: this is commented out because something's messed up w/ the avatar
         // mesh skeleton and its not lining up correctly (especially the left shoulder).
         const playerAvatarTask = assetsManager.addMeshTask("loading avatar", "", "assets/avatars/xbot/xbot.babylon", "");
         playerAvatarTask.onSuccess = (task) =>
         {
+            // for (let mesh of task.loadedMeshes)
+            // {
+            //     mesh.scaling = Vector3.One();
+            // }
+            // for (let skeleton of task.loadedSkeletons)
+            // {
+            //     for (let bone of skeleton.bones)
+            //     {
+            //         bone.setScale(Vector3.One());
+            //     }
+            // }
+
             if (task.loadedSkeletons.length != 1)
             {
                 console.error("expected exactly 1 skeleton in the user avatar.");
@@ -360,7 +371,13 @@ export class BasicSceneCCD
             {
                 try
                 {
-                    const bones: SkeletonBones = new SkeletonBones(task.loadedSkeletons[0],
+                    const skeleton = task.loadedSkeletons[0];
+
+                    // NOTE: must be disabled in order to use CCD IK, since there
+                    // is some fcked up scaling going on somewhere in the shaders.
+                    skeleton.useTextureToStoreBoneMatrices = false;
+
+                    const bones: SkeletonBones = new SkeletonBones(skeleton,
                         "mixamorig:Neck",
                         "mixamorig:Head",
 
@@ -372,6 +389,15 @@ export class BasicSceneCCD
                         "mixamorig:RightForeArm",
                         "mixamorig:RightHand"
                     );
+
+                    // Adjust shoulder compensation.
+                    const lShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:LeftShoulder")]
+                    lShoulderBone?.rotate(Vector3.Right(), Math.PI);
+                    lShoulderBone?.markAsDirty();
+                    const rightShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:RightShoulder")]
+                    rightShoulderBone?.rotate(Vector3.Right(), Math.PI);
+                    rightShoulderBone?.markAsDirty();
+
 
                     const playerAvatarRoot = new TransformNode("player_avatar_root", this.scene);
                     Utilities.ResetTransform(playerAvatarRoot);
@@ -411,10 +437,13 @@ export class BasicSceneCCD
                     // Disable the visualization mesh after the first calibration.
                     this.ikAvatar?.onCalibrationStateChange.add((state: CalibrationState) =>
                     {
-                        visualizationMeshes.forEach((mesh: AbstractMesh) =>
+                        if (state == CalibrationState.FINISH)
                         {
-                            mesh.setEnabled(false);
-                        });
+                            visualizationMeshes.forEach((mesh: AbstractMesh) =>
+                            {
+                                mesh.setEnabled(false);
+                            });
+                        }
                     });
                 }
                 catch(e)
@@ -424,7 +453,6 @@ export class BasicSceneCCD
                 }
             }
         }
-        */
 
         assetsManager.onFinish = (tasks) =>
         {
@@ -465,7 +493,7 @@ export class BasicSceneCCD
         }
         assetsManager.load();
 
-        // this.scene.debugLayer.show();
+        this.scene.debugLayer.show();
     }
 
     private update() : void

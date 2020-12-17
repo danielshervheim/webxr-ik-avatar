@@ -87,19 +87,19 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		processing begun of material:  xbot_joints
 		processing begun of multimaterial:  xbot.Multimaterial#0
 		Custom split normals with tangents being used
-		num positions      :  25059
-		num normals        :  25059
-		num tangents       :  100236
-		num uvs            :  50118
+		num positions      :  25072
+		num normals        :  25072
+		num tangents       :  100288
+		num uvs            :  50144
 		num uvs2           :  0
 		num colors         :  0
 		num triangles      :  28652
 		Skeleton stats:  
-			Total Influencers:  25059
+			Total Influencers:  25072
 			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  25059
+			Highest # of influencers observed:  1, num vertices with this:  25072
 			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  100236
+			num skeletonWeights and skeletonIndices:  100288
 	processing begun of mesh:  xbot_joints_mid
 		processing begun of material:  xbot_joints
 		registered as also a user of material:  xbot_joints
@@ -138,19 +138,19 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 		processing begun of material:  xbot_joints
 		registered as also a user of material:  xbot_joints
 		Custom split normals with tangents being used
-		num positions      :  4265
-		num normals        :  4265
-		num tangents       :  17060
-		num uvs            :  8530
+		num positions      :  4269
+		num normals        :  4269
+		num tangents       :  17076
+		num uvs            :  8538
 		num uvs2           :  0
 		num colors         :  0
 		num triangles      :  6840
 		Skeleton stats:  
-			Total Influencers:  4265
+			Total Influencers:  4269
 			Avg # of influencers per vertex:  1
-			Highest # of influencers observed:  1, num vertices with this:  4265
+			Highest # of influencers observed:  1, num vertices with this:  4269
 			exported as 1 influencers
-			num skeletonWeights and skeletonIndices:  17060
+			num skeletonWeights and skeletonIndices:  17076
 	processing begun of mesh:  xbot_body_upper
 		processing begun of material:  xbot_body
 		registered as also a user of material:  xbot_body
@@ -212,4 +212,4 @@ Exporter version: 6.4.6, Blender version: 2.83.5
 	writing mesh:  xbot_body_mid
 ========= Writing of JSON file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 12.6475 secs
+elapsed time:  0 min, 13.2203 secs

@@ -221,21 +221,21 @@ export class CCDIKAvatar
             // TODO: scale mesh arms as well?
         }
 
-        // if (this.leftController && this.rightController)
-        // {
-        //     const armSpan = Vector3.Distance(
-        //         this.leftController.pointer.getAbsolutePosition(),
-        //         this.rightController.pointer.getAbsolutePosition()
-        //     );
-        //     if (Math.abs(armSpan) < 1e-4)
-        //     {
-        //         console.error("WARNING - IKAvatar.calibrate(). Degenerate arm span. Ignoring.");
-        //     }
-        //     else
-        //     {
-        //         this.transforms.setArmLengthsFromArmspan(armSpan);
-        //     }
-        // }
+        if (this.leftController && this.rightController)
+        {
+            const armSpan = Vector3.Distance(
+                this.leftController.pointer.getAbsolutePosition(),
+                this.rightController.pointer.getAbsolutePosition()
+            );
+            if (Math.abs(armSpan) < 1e-4)
+            {
+                console.error("WARNING - IKAvatar.calibrate(). Degenerate arm span. Ignoring.");
+            }
+            else
+            {
+                this.transforms.setArmLengthsFromArmspan(armSpan);
+            }
+        }
     }
 
     private updateRoot(): void
@@ -377,23 +377,13 @@ export class CCDIKAvatar
 
                 for (let i = 0; i < transformIndicies.length; i++)
                 {
-                    const transform = this.transforms.getNode(transformIndicies[i]);
-                    const bone = this.avatarBones.getBone(boneIndicies[i]);
+                    let transform = this.transforms.getNode(transformIndicies[i]);
+                    let bone = this.avatarBones.getBone(boneIndicies[i]);
 
                     if (transform.rotationQuaternion != null)
                     {
                         bone.setRotationQuaternion(transform.rotationQuaternion!.clone(), Space.LOCAL);
-                        // TODO: for some reason this extra rotation is necessary.
-                        // I think its something to do w/ the way the mesh is
-                        // prepared in blender???
-                        if (boneIndicies[i] == BoneIndex.RIGHT_SHOULDER)
-                        {
-                            bone.rotate(Vector3.Right(), Math.PI, Space.LOCAL);
-                        }
-                        if (boneIndicies[i] == BoneIndex.LEFT_SHOULDER)
-                        {
-                            // bone.rotate(Vector3.Forward(), Math.PI, Space.LOCAL);
-                        }
+                        bone.markAsDirty();
                     }
                 }
             }
@@ -406,6 +396,7 @@ export class CCDIKAvatar
                 {
                     const bone = this.avatarBones.getBone(BoneIndex.NECK);
                     bone.setRotationQuaternion(transform.rotationQuaternion, Space.LOCAL);
+                    bone.markAsDirty();
                 }
             }
         }

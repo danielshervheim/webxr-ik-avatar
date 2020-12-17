@@ -36,7 +36,7 @@ export class Utilities
     static LookRotation(forward: Vector3, up: Vector3) : Quaternion
     {
         let result = Matrix.Zero();
-        Matrix.LookAtLHToRef(Vector3.Zero(), forward, new Vector3(0,1,0), result);
+        Matrix.LookAtLHToRef(Vector3.Zero(), forward, up, result);
         result.invert();
         return Quaternion.FromRotationMatrix(result);
     }

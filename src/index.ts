@@ -11,9 +11,9 @@ import { StudioSceneBoneIK } from "./studioScene_BoneIK";
 import { BasicSceneBoneIK } from "./basicScene_BoneIK";
 
 // Instantiate a scene.
-let scene = new BasicSceneBoneIK();
+// let scene = new BasicSceneBoneIK();
 // let scene = new StudioSceneBoneIK();
-// let scene = new BasicSceneCCD();
+let scene = new BasicSceneCCD();
 // let scene = new StudioSceneCCD();
 
 // Start running it.

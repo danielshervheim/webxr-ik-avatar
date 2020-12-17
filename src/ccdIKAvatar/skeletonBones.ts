@@ -65,6 +65,15 @@ export class SkeletonBones
         {
             throw new Error("SkeletonTransforms() failed. Unable to find bone(s) of the given name.");
         }
+
+        // console.log("neckBone rotation = " + neckBone.rotation);
+        // console.log("headBone rotation = " + headBone.rotation);
+        // console.log("leftShoulderBone rotation = " + leftShoulderBone.rotation);
+        // console.log("leftElbowBone rotation = " + leftElbowBone.rotation);
+        // console.log("leftWristBone rotation = " + leftWristBone.rotation);
+        // console.log("rightShoulderBone rotation = " + rightShoulderBone.rotation);
+        // console.log("rightElbowBone rotation = " + rightElbowBone.rotation);
+        // console.log("rightWristBone rotation = " + rightWristBone.rotation);
     }
 
     getBone(index: BoneIndex): Bone
