@@ -12,15 +12,13 @@ Names: Daniel Shervheim and Alexander Gullickson
 
 UMN Email: sherv029@umn.edu and gulli173@umn.edu
 
-Build URLs:
+Build URL(s):
 The build URLs are broken down into key section to showcase our work. The Calibration URL will enable assessment on the calibration UI and quality of calibration. Then, the URLs are broken down between a basic and complex scene for both the BabylonJS BoneIKController implementation and our own CCD implementation. This allows assessment on the quality of each of them in both a basic scene and determine how well they work in a scene more indicative of an actual environment where the avatars would be used.
 
-TODO: Add build URLs
-Calibration:
-- [BoneIK Basic Scene](https://www-users.cselabs.umn.edu/~sherv029/5619/final/dist/index1.html)
-- [BoneIK Studio Scene](https://www-users.cselabs.umn.edu/~sherv029/5619/final/dist/index2.html)
-- [CCD Basic Scene](https://www-users.cselabs.umn.edu/~sherv029/5619/final/dist/index3.html)
-- [CCD Studio Scene](https://www-users.cselabs.umn.edu/~sherv029/5619/final/dist/index4.html)
+Each scene can be found from the following page:
+
+[CSCI 5619 Final Project](https://www-users.cselabs.umn.edu/~sherv029/5619/final/dist/)
+
 
 Third Party Assets:
 
