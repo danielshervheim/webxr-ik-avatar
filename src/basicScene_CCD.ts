@@ -351,18 +351,6 @@ export class BasicSceneCCD
         const playerAvatarTask = assetsManager.addMeshTask("loading avatar", "", "assets/avatars/xbot/xbot.babylon", "");
         playerAvatarTask.onSuccess = (task) =>
         {
-            // for (let mesh of task.loadedMeshes)
-            // {
-            //     mesh.scaling = Vector3.One();
-            // }
-            // for (let skeleton of task.loadedSkeletons)
-            // {
-            //     for (let bone of skeleton.bones)
-            //     {
-            //         bone.setScale(Vector3.One());
-            //     }
-            // }
-
             if (task.loadedSkeletons.length != 1)
             {
                 console.error("expected exactly 1 skeleton in the user avatar.");

@@ -195,11 +195,13 @@ export class CCDIKAvatar
 
     private calibrate(): void
     {
+        // Scale height.
         if (this.xrCamera?.realWorldHeight)
         {
             this.transforms.calibrateFromEyeHeight(this.xrCamera.realWorldHeight);
         }
 
+        // Scale mesh height.
         if (this.avatarRoot)
         {
             const meshHeight = Utilities.GetBoundingHeight(this.avatarRoot);
@@ -217,10 +219,9 @@ export class CCDIKAvatar
             // Show the avatar!
             this.avatarRoot.setEnabled(true);
             console.log('IKAvatar.calibrate(). Scaling avatar and enabling it');
-
-            // TODO: scale mesh arms as well?
         }
 
+        // Scale arms.
         if (this.leftController && this.rightController)
         {
             const armSpan = Vector3.Distance(
@@ -233,8 +234,47 @@ export class CCDIKAvatar
             }
             else
             {
+                // Scale transform arms.
                 this.transforms.setArmLengthsFromArmspan(armSpan);
             }
+        }
+
+        // Scale mesh arms as well.
+        if (this.avatarRoot && this.avatarBones)
+        {
+            const upperArmLength = this.transforms.getUpperArmLength();
+            const lowerArmLength = this.transforms.getLowerArmLength();
+
+            const leftShoulderBone = this.avatarBones.getBone(BoneIndex.LEFT_SHOULDER);
+            const leftElbowBone = this.avatarBones.getBone(BoneIndex.LEFT_ELBOW);
+            const leftWristBone = this.avatarBones.getBone(BoneIndex.LEFT_WRIST);
+
+            const rightShoulderBone = this.avatarBones.getBone(BoneIndex.RIGHT_SHOULDER);
+            const rightElbowBone = this.avatarBones.getBone(BoneIndex.RIGHT_ELBOW);
+            const rightWristBone = this.avatarBones.getBone(BoneIndex.RIGHT_WRIST);
+
+            // Make the assumption that both arms are identical length.
+            const currentUpperArmLength = Vector3.Distance(
+                leftShoulderBone.getAbsolutePosition(),
+                leftElbowBone.getAbsolutePosition()
+            );
+            const upperArmScalingRatio = upperArmLength/currentUpperArmLength;
+            console.log("Upper arm length = " + currentUpperArmLength);
+            console.log("Upper arm scaling ratio = " + upperArmScalingRatio);
+
+            leftShoulderBone.setScale(leftShoulderBone.getScale().clone().scale(upperArmScalingRatio).divide(this.avatarRoot.scaling));
+            rightShoulderBone.setScale(rightShoulderBone.getScale().clone().scale(upperArmScalingRatio).divide(this.avatarRoot.scaling));
+
+            // const currentLowerArmLength = Vector3.Distance(
+            //     leftElbowBone.getAbsolutePosition(),
+            //     leftWristBone.getAbsolutePosition()
+            // );
+            // const lowerArmScalingRatio = lowerArmLength/currentLowerArmLength
+            // console.log("Lower arm length = " + currentLowerArmLength);
+            // console.log("Lower arm scaling ratio = " + lowerArmScalingRatio);
+            //
+            // leftElbowBone.setScale(leftElbowBone.getScale().clone().scale(lowerArmScalingRatio).divide(this.avatarRoot.scaling));
+            // rightElbowBone.setScale(rightElbowBone.getScale().clone().scale(lowerArmScalingRatio).divide(this.avatarRoot.scaling));
         }
     }
 
@@ -388,6 +428,7 @@ export class CCDIKAvatar
             }
 
             // Copy the neck bone.
+            /*
             if (this.avatarBones)
             {
                 const transform = this.transforms.getNode(TransformIndex.HEAD);
@@ -397,6 +438,7 @@ export class CCDIKAvatar
                     bone.setRotationQuaternion(transform.rotationQuaternion, Space.LOCAL);
                 }
             }
+            */
         }
     }
 }

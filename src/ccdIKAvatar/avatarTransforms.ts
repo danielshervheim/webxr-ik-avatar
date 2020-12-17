@@ -21,6 +21,7 @@ export enum TransformIndex
 }
 
 const DEFAULT_HEIGHT = 1.68;
+const DEFAULT_EYE_HEIGHT = DEFAULT_HEIGHT * 0.9333;
 
 export class AvatarTransforms
 {
@@ -28,17 +29,15 @@ export class AvatarTransforms
 
     private nodes: Map<TransformIndex, TransformNode>;
 
-    private mostRecentMeasurements: AvatarMeasurements | null = null;
+    private measurements: AvatarMeasurements;
 
     constructor(scene: Scene)
     {
         this.scene = scene;
         this.nodes = new Map<TransformIndex, TransformNode>();
+        this.measurements = new AvatarMeasurements(DEFAULT_EYE_HEIGHT);
 
-        // TODO: note, the specific rotations are to match the skeleton imported
-        // by the user. This is not robust and should be changed to be more flexible.
 
-        // Setup skeleton hierarchy...
         const root = new TransformNode("avatar_root", this.scene);
         Utilities.ResetTransform(root);
         this.nodes.set(TransformIndex.ROOT, root);
@@ -51,7 +50,6 @@ export class AvatarTransforms
         const leftShoulder = new TransformNode("avatar_leftShoulder", this.scene);
         leftShoulder.setParent(root);
         Utilities.ResetTransform(leftShoulder);
-        // leftShoulder.rotation = new Vector3(0, 0, Math.PI);
         this.nodes.set(TransformIndex.LEFT_SHOULDER, leftShoulder);
 
         const leftElbow = new TransformNode("avatar_leftElbow", this.scene);
@@ -67,7 +65,6 @@ export class AvatarTransforms
         const rightShoulder = new TransformNode("avatar_rightShoulder", this.scene);
         rightShoulder.setParent(root);
         Utilities.ResetTransform(rightShoulder);
-        // rightShoulder.rotation = new Vector3(0, 0, -Math.PI);
         this.nodes.set(TransformIndex.RIGHT_SHOULDER, rightShoulder);
 
         const rightElbow = new TransformNode("avatar_rightElbow", this.scene);
@@ -81,14 +78,14 @@ export class AvatarTransforms
         this.nodes.set(TransformIndex.RIGHT_WRIST, rightWrist);
 
         // ...and calibrate it with a default height of 5'6".
-        this.calibrateFromEyeHeight(DEFAULT_HEIGHT*0.9333);
+        this.calibrateFromEyeHeight(DEFAULT_EYE_HEIGHT);
     }
 
     calibrateFromEyeHeight(eyeHeight: number): void
     {
         console.log("AvatarTransforms.calibrateFromEyeHeight(). eyeHeight = " + eyeHeight);
 
-        const m: AvatarMeasurements = AvatarMeasurements.DeriveFromEyeHeight(eyeHeight);
+        this.measurements.deriveFromEyeHeight(eyeHeight);
 
         const root = this.nodes.get(TransformIndex.ROOT)!;
         const head = this.nodes.get(TransformIndex.HEAD)!;
@@ -99,45 +96,34 @@ export class AvatarTransforms
         const rightElbow = this.nodes.get(TransformIndex.RIGHT_ELBOW)!;
         const rightWrist = this.nodes.get(TransformIndex.RIGHT_WRIST)!;
 
-        root.position = new Vector3(root.position.x, m.shoulderHeight, root.position.z);
-        head.position = new Vector3(0, m.shoulderToEyeOffset, 0);
+        root.position = new Vector3(root.position.x, this.measurements.shoulderHeight, root.position.z);
+        head.position = new Vector3(0, this.measurements.shoulderToEyeOffset, 0);
 
-        // leftShoulder.position = new Vector3(m.leftShoulderOffset, 0, 0);
-        // leftElbow.position = new Vector3(0, m.upperArmLength, 0);
-        // leftWrist.position = new Vector3(0, m.foreArmLength, 0);
-        //
-        // rightShoulder.position = new Vector3(m.rightShoulderOffset, 0, 0);
-        // rightElbow.position = new Vector3(0, m.upperArmLength, 0);
-        // rightWrist.position = new Vector3(0, m.foreArmLength, 0);
+        leftShoulder.position = new Vector3(this.measurements.leftShoulderOffset, 0, 0);
+        leftElbow.position = new Vector3(-this.measurements.upperArmLength, 0, 0);
+        leftWrist.position = new Vector3(-this.measurements.foreArmLength, 0, 0);
 
-        leftShoulder.position = new Vector3(m.leftShoulderOffset, 0, 0);
-        leftElbow.position = new Vector3(-m.upperArmLength, 0, 0);
-        leftWrist.position = new Vector3(-m.foreArmLength, 0, 0);
-
-        rightShoulder.position = new Vector3(m.rightShoulderOffset, 0, 0);
-        rightElbow.position = new Vector3(m.upperArmLength, 0, 0);
-        rightWrist.position = new Vector3(m.foreArmLength, 0, 0);
-
-        this.mostRecentMeasurements = m;
+        rightShoulder.position = new Vector3(this.measurements.rightShoulderOffset, 0, 0);
+        rightElbow.position = new Vector3(this.measurements.upperArmLength, 0, 0);
+        rightWrist.position = new Vector3(this.measurements.foreArmLength, 0, 0);
     }
 
     setArmLengthsFromArmspan(armSpan: number): void
     {
         console.log("AvatarTransforms.setArmLengthsFromArmspan(). armSpan = " + armSpan);
 
-        const upperArmLength = 0.2015 * armSpan;
-        const lowerArmLength = 0.1582 * armSpan;
+        this.measurements.deriveArmLengthsFromArmSpan(armSpan);
 
         const leftElbow = this.nodes.get(TransformIndex.LEFT_ELBOW)!;
         const leftWrist = this.nodes.get(TransformIndex.LEFT_WRIST)!;
         const rightElbow = this.nodes.get(TransformIndex.RIGHT_ELBOW)!;
         const rightWrist = this.nodes.get(TransformIndex.RIGHT_WRIST)!;
 
-        leftElbow.position = new Vector3(upperArmLength, 0, 0);
-        leftWrist.position = new Vector3(lowerArmLength, 0, 0);
+        leftElbow.position = new Vector3(-this.measurements.upperArmLength, 0, 0);
+        leftWrist.position = new Vector3(-this.measurements.foreArmLength, 0, 0);
 
-        rightElbow.position = new Vector3(upperArmLength, 0, 0);
-        rightWrist.position = new Vector3(lowerArmLength, 0, 0);
+        rightElbow.position = new Vector3(this.measurements.upperArmLength, 0, 0);
+        rightWrist.position = new Vector3(this.measurements.foreArmLength, 0, 0);
     }
 
     getNode(index: TransformIndex): TransformNode
@@ -189,14 +175,19 @@ export class AvatarTransforms
 
     getHeight(): number
     {
-        if (this.mostRecentMeasurements)
-        {
-            return this.mostRecentMeasurements.height;
-        }
-        else
-        {
-            return DEFAULT_HEIGHT;
-        }
+        return this.measurements.height;
+    }
+
+    getUpperArmLength(): number
+    {
+        return this.measurements.upperArmLength;
+
+    }
+
+    getLowerArmLength(): number
+    {
+        return this.measurements.foreArmLength;
+
     }
 
 }

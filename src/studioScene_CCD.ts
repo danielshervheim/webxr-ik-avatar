@@ -359,7 +359,6 @@ export class StudioSceneCCD
             }
         }
 
-        /*
         // Load in the player avatar.
         const playerAvatarTask = assetsManager.addMeshTask("loading avatar", "", "assets/avatars/xbot/xbot.babylon", "");
         playerAvatarTask.onSuccess = (task) =>
@@ -372,7 +371,9 @@ export class StudioSceneCCD
             {
                 try
                 {
-                    const bones: SkeletonBones = new SkeletonBones(task.loadedSkeletons[0],
+                    const skeleton = task.loadedSkeletons[0];
+
+                    const bones: SkeletonBones = new SkeletonBones(skeleton,
                         "mixamorig:Neck",
                         "mixamorig:Head",
 
@@ -384,6 +385,13 @@ export class StudioSceneCCD
                         "mixamorig:RightForeArm",
                         "mixamorig:RightHand"
                     );
+
+                    // Adjust shoulder compensation.
+                    const lShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:LeftShoulder")]
+                    lShoulderBone?.rotate(Vector3.Right(), Math.PI);
+
+                    const rightShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:RightShoulder")]
+                    rightShoulderBone?.rotate(Vector3.Right(), Math.PI);
 
                     const playerAvatarRoot = new TransformNode("player_avatar_root", this.scene);
                     Utilities.ResetTransform(playerAvatarRoot);
@@ -401,14 +409,14 @@ export class StudioSceneCCD
                         // Disable rendering in the XR if its a head mesh. This
                         // is to prevent rendering from the headset POV. (It will
                         // still render in the mirrors).
-                        if (mesh.name.endsWith("upper"))
+                        if (!mesh.name.endsWith("arms"))
                         {
                             mesh.layerMask = 0x00000000;
                         }
 
                         // Disable rendering of everything but the arms (from the
                         // players POV) - this is to prevent clipping.
-                        if (!mesh.name.endsWith("arms"))
+                        if (mesh.name.endsWith("lower"))
                         {
                             mesh.setEnabled(false);
                         }
@@ -416,6 +424,18 @@ export class StudioSceneCCD
 
                     // Position, rotate, and scale the root.
                     playerAvatarRoot.scaling.scaleInPlace(1.0 / Utilities.GetBoundingHeight(playerAvatarRoot) * 1.68);
+
+                    // Disable the visualization mesh after the first calibration.
+                    this.ikAvatar?.onCalibrationStateChange.add((state: CalibrationState) =>
+                    {
+                        if (state == CalibrationState.FINISH)
+                        {
+                            visualizationMeshes.forEach((mesh: AbstractMesh) =>
+                            {
+                                mesh.setEnabled(false);
+                            });
+                        }
+                    });
 
                     // Bind it to the IKAvatar controller.
                     this.ikAvatar?.bindSkeletalMesh(playerAvatarRoot, task.loadedSkeletons[0], bones);
@@ -427,7 +447,6 @@ export class StudioSceneCCD
                 }
             }
         }
-        */
 
         // Load the world mesh and scale it appropriately.
         const worldTask = assetsManager.addMeshTask("world task", "", "assets/world.glb", "");
