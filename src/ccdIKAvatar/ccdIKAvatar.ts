@@ -383,7 +383,6 @@ export class CCDIKAvatar
                     if (transform.rotationQuaternion != null)
                     {
                         bone.setRotationQuaternion(transform.rotationQuaternion!.clone(), Space.LOCAL);
-                        bone.markAsDirty();
                     }
                 }
             }
@@ -396,7 +395,6 @@ export class CCDIKAvatar
                 {
                     const bone = this.avatarBones.getBone(BoneIndex.NECK);
                     bone.setRotationQuaternion(transform.rotationQuaternion, Space.LOCAL);
-                    bone.markAsDirty();
                 }
             }
         }

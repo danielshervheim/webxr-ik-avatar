@@ -373,9 +373,10 @@ export class BasicSceneCCD
                 {
                     const skeleton = task.loadedSkeletons[0];
 
-                    // NOTE: must be disabled in order to use CCD IK, since there
-                    // is some fcked up scaling going on somewhere in the shaders.
-                    skeleton.useTextureToStoreBoneMatrices = false;
+
+                    // // NOTE: must be disabled in order to use CCD IK, since there
+                    // // is some fcked up scaling going on somewhere in the shaders.
+                    // skeleton.useTextureToStoreBoneMatrices = false;
 
                     const bones: SkeletonBones = new SkeletonBones(skeleton,
                         "mixamorig:Neck",
@@ -393,11 +394,9 @@ export class BasicSceneCCD
                     // Adjust shoulder compensation.
                     const lShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:LeftShoulder")]
                     lShoulderBone?.rotate(Vector3.Right(), Math.PI);
-                    lShoulderBone?.markAsDirty();
+
                     const rightShoulderBone = skeleton.bones[skeleton.getBoneIndexByName("mixamorig:RightShoulder")]
                     rightShoulderBone?.rotate(Vector3.Right(), Math.PI);
-                    rightShoulderBone?.markAsDirty();
-
 
                     const playerAvatarRoot = new TransformNode("player_avatar_root", this.scene);
                     Utilities.ResetTransform(playerAvatarRoot);
@@ -431,9 +430,6 @@ export class BasicSceneCCD
                     // Position, rotate, and scale the root.
                     playerAvatarRoot.scaling.scaleInPlace(1.0 / Utilities.GetBoundingHeight(playerAvatarRoot) * 1.68);
 
-                    // Bind it to the IKAvatar controller.
-                    this.ikAvatar?.bindSkeletalMesh(playerAvatarRoot, task.loadedSkeletons[0], bones);
-
                     // Disable the visualization mesh after the first calibration.
                     this.ikAvatar?.onCalibrationStateChange.add((state: CalibrationState) =>
                     {
@@ -445,6 +441,9 @@ export class BasicSceneCCD
                             });
                         }
                     });
+
+                    // Bind it to the IKAvatar controller.
+                    this.ikAvatar?.bindSkeletalMesh(playerAvatarRoot, task.loadedSkeletons[0], bones);
                 }
                 catch(e)
                 {
