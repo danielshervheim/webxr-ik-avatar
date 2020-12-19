@@ -24,7 +24,9 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { WebXRCamera } from "@babylonjs/core/XR/webXRCamera";
 import { WebXRInputSource } from "@babylonjs/core/XR/webXRInputSource";
-
+import { LinesMesh } from "@babylonjs/core/Meshes/linesMesh";
+import { WebXRControllerComponent } from "@babylonjs/core/XR/motionController/webXRControllercomponent";
+import { Ray } from "@babylonjs/core/Culling/ray";
 // Side effects.
 import "@babylonjs/core/Helpers/sceneHelpers";
 import "@babylonjs/inspector";
@@ -39,6 +41,15 @@ export class StudioSceneCCD
 
     private lightmapDictionary : { [id: string] : Array<string>; } = {};
     private lightmapTextures : { [id: string] : Texture | null } = {};
+
+    //Teleportation
+    private worldTransform: TransformNode;
+    private rightController: WebXRInputSource | null;
+    private laserPointer: LinesMesh | null;
+    private teleportPoint: Vector3 | null;
+    private teleportTransform: TransformNode;
+    private groundMeshes: Array<AbstractMesh>;
+    private mirrors: SmartArray<Mirror>;
 
     constructor()
     {
@@ -101,6 +112,16 @@ export class StudioSceneCCD
             "table",
             "tv_screen",
         ];
+
+        this.rightController   = null;
+        this.laserPointer      = null;
+        this.teleportPoint     = null;
+        this.worldTransform    = new TransformNode("World", this.scene);
+        this.teleportTransform = new TransformNode("teleportIndicator", this.scene);
+        this.teleportTransform.setEnabled( false );
+        this.groundMeshes = [];
+
+        this.mirrors = new SmartArray<Mirror>(4);
     }
 
     start() : void
@@ -142,6 +163,37 @@ export class StudioSceneCCD
         // Disable teleportation and the laser pointer
         xrHelper.teleportation.dispose();
         xrHelper.pointerSelection.dispose();
+
+        // Create points for the laser pointer
+        var laserPoints = [];
+        laserPoints.push(new Vector3(0, 0, 0));
+        laserPoints.push(new Vector3(0, 0, 1));
+
+        // Create a laser pointer and make sure it is not pickable
+        this.laserPointer            = MeshBuilder.CreateLines("laserPointer", {points: laserPoints}, this.scene);
+        this.laserPointer.color      = Color3.White();
+        this.laserPointer.alpha      = .5;
+        this.laserPointer.visibility = 0;
+        this.laserPointer.isPickable = false;
+
+        // Attach the laser pointer to the right controller when it is connected
+        xrHelper.input.onControllerAddedObservable.add((inputSource) => {
+            if(inputSource.uniqueId.endsWith("right"))
+            {
+                this.rightController = inputSource;
+                this.laserPointer!.parent = this.rightController.pointer;
+            }
+        });
+
+        // Don't forget to deparent the laser pointer or it will be destroyed!
+        xrHelper.input.onControllerRemovedObservable.add((inputSource) => {
+
+            if(inputSource.uniqueId.endsWith("right"))
+            {
+                this.laserPointer!.parent = null;
+                this.laserPointer!.visibility = 0;
+            }
+        });
 
         const xrCamera = xrHelper.baseExperience.camera;
 
@@ -187,10 +239,20 @@ export class StudioSceneCCD
         // Make sure the environment and skybox is not pickable!
         environment!.skybox!.isPickable = false;
 
-        // Create the mirrors.
-        let mirrors: SmartArray<Mirror> = new SmartArray<Mirror>(2);
+        // Teleportation Target
+        var teleportTarget            = MeshBuilder.CreateTorus("teleTarget", { diameter: 1, thickness: 0.2, tessellation: 20 }, this.scene);
+            teleportTarget.isPickable = false;
+            teleportTarget.position   = new Vector3(0,0.1,0);
+            teleportTarget.parent     = this.teleportTransform;
 
-        mirrors.push(new Mirror(
+        var teleportMaterial                 = new StandardMaterial("teleportTarget", this.scene);
+            teleportMaterial.specularColor   = Color3.Black();
+            teleportMaterial.emissiveColor   = new Color3(0,0.5,1);
+            teleportMaterial.backFaceCulling = false;
+            teleportTarget.material          = teleportMaterial;
+
+        // Create the mirrors.
+        this.mirrors.push(new Mirror(
             "mirrorByWall",
             new Vector3(-5.4, 1.5, 3.6),
             new Vector3(0, 270 * ( Math.PI / 180 ), 0),
@@ -201,7 +263,7 @@ export class StudioSceneCCD
             this.scene
         ));
 
-        // mirrors.push(new Mirror(
+        // this.mirrors.push(new Mirror(
         //     "mirrorByDoor",
         //     new Vector3(3.85, 1, 7.9),
         //     new Vector3(0, 0, 0),
@@ -213,7 +275,7 @@ export class StudioSceneCCD
         // ));
 
         // Register the skybox with all mirrors.
-        mirrors.forEach((mirror: Mirror)=>
+        this.mirrors.forEach((mirror: Mirror)=>
         {
             mirror.render(environment!.skybox!);
             visualizationMeshes.forEach((mesh: AbstractMesh) =>
@@ -309,7 +371,7 @@ export class StudioSceneCCD
                 for (let mesh of task.loadedMeshes)
                 {
                     // Render the mesh in the mirror.
-                    mirrors.forEach((mirror: Mirror) =>
+                    this.mirrors.forEach((mirror: Mirror) =>
                     {
                         mirror.render(mesh);
                     });
@@ -398,7 +460,7 @@ export class StudioSceneCCD
                     for (let mesh of task.loadedMeshes)
                     {
                         // Render the mesh in the mirror.
-                        mirrors.forEach((mirror: Mirror) =>
+                        this.mirrors.forEach((mirror: Mirror) =>
                         {
                             mirror.render(mesh);
                         });
@@ -420,6 +482,8 @@ export class StudioSceneCCD
                         {
                             mesh.setEnabled(false);
                         }
+
+                        mesh.isPickable = false;
                     }
 
                     // Position, rotate, and scale the root.
@@ -453,15 +517,20 @@ export class StudioSceneCCD
         worldTask.onSuccess = (task) =>
         {
             task.loadedMeshes[0].name = "world";
+            task.loadedMeshes[0].setParent(this.worldTransform);
             Utilities.ResetTransform(task.loadedMeshes[0]);
 
             for (let mesh of task.loadedMeshes)
             {
                 // Render each mesh in the mirrors.
-                mirrors.forEach((mirror: Mirror)=>
+                this.mirrors.forEach((mirror: Mirror)=>
                 {
                     mirror.render(mesh);
                 });
+                if( ( mesh.name.startsWith("walls_primitive3") || mesh.name.startsWith("deck_floor") ) )
+                {
+                    this.groundMeshes.push(mesh);
+                }
             }
         }
 
@@ -554,5 +623,71 @@ export class StudioSceneCCD
     private update() : void
     {
         this.ikAvatar?.update(this.engine.getDeltaTime());
+
+        this.processControllerInput();
+    }
+
+    private processControllerInput()
+    {
+        this.onRightThumbstick(this.rightController?.motionController?.getComponent("xr-standard-thumbstick"));
+    }
+
+    private onRightThumbstick(component?: WebXRControllerComponent)
+    {
+        if(component?.changes.axes)
+        {
+            // If the thumbstick is moved forward
+            if(component.axes.y < -.75)
+            {
+                // Create a new ray cast
+                var ray = new Ray(this.rightController!.pointer.position, this.rightController!.pointer.forward, 20);
+                var pickInfo = this.scene.pickWithRay(ray);
+
+                // If the ray cast intersected a ground mesh
+                if(pickInfo?.hit && this.groundMeshes.includes(pickInfo.pickedMesh!))
+                {
+                    this.teleportPoint            = pickInfo.pickedPoint;
+                    this.laserPointer!.scaling.z  = pickInfo.distance;
+                    this.laserPointer!.visibility = 1;
+                    if(pickInfo.pickedPoint)
+                    {
+                        this.teleportTransform.position = pickInfo.pickedPoint;
+                        this.teleportTransform.setEnabled(true);
+                    }
+                }
+                else
+                {
+                    this.teleportPoint              = null;
+                    this.laserPointer!.visibility   = 0;
+                    this.teleportTransform.position = Vector3.Zero();
+                    this.teleportTransform.setEnabled(false);
+                }
+            }
+            // If thumbstick returns to the rest position
+            else if(component.axes.y == 0)
+            {
+                this.laserPointer!.visibility = 0;
+
+                // If we have a valid targer point, then teleport the user
+                if(this.teleportPoint)
+                {
+                    this.worldTransform.position.x -= this.teleportPoint.x;
+                    this.worldTransform.position.z -= this.teleportPoint.z;
+                    let mirrorPosition   = this.teleportPoint.clone();
+                        mirrorPosition.y = 0;
+
+                    this.teleportPoint = null;
+
+                    // var cameraRotation = Quaternion.FromEulerAngles(0, this.teleportRot.y, 0);
+                    // this.worldTransform.rotation.y -= this.teleportRot.y;
+                    this.mirrors.forEach((mirror: Mirror) =>
+                    {
+                        mirror.update( mirrorPosition, this.worldTransform.rotation, this.scene);
+                    });
+
+                    this.teleportTransform.setEnabled(false);
+                }
+            }
+        }
     }
 }
