@@ -377,6 +377,31 @@ export class CCDIKAvatar
         const camForward = Utilities.WorldToLocalDirection(this.xrCamera.getDirection(Vector3.Forward()), neck);
         const camUp = Utilities.WorldToLocalDirection(this.xrCamera.getDirection(Vector3.Up()), neck);
         neck.rotationQuaternion = Utilities.LookRotation(camForward, camUp);
+
+        // Update Skeleton Head Mesh
+        // update user head rotation
+        let skeleton = this.avatarSkeleton;//AvatarTask.loadedSkeletons[0];
+        if (skeleton)
+        {
+            const rot = this.xrCamera.rotationQuaternion.toEulerAngles();
+            const headIdx = skeleton.getBoneIndexByName("mixamorig:Head");
+            const headBone = skeleton.bones[headIdx];
+            if (headBone)
+            {
+                let bodyRot = this.avatarRoot?.rotationQuaternion?.toEulerAngles().y;
+                // Logger.Log("Body Rotation: " + bodyRot );
+                if( bodyRot )
+                {
+                    headBone.rotationQuaternion = new Vector3( rot.x, /*this.bfActual.y*/  bodyRot - rot.y, -rot.z).toQuaternion();
+                    // Logger.Log("Body Rotation: " + bodyRot + " head Rotation:" + headBone.rotationQuaternion.toEulerAngles());
+                }
+                else
+                {
+                    headBone.rotationQuaternion = new Vector3( rot.x, - rot.y, -rot.z).toQuaternion();
+                    // Logger.Log("Body Rotation: " + bodyRot + " head Rotation:" + headBone.rotationQuaternion.toEulerAngles());
+                }
+            }
+        }
     }
 
     private mirrorAvatarToSkeleton(): void
