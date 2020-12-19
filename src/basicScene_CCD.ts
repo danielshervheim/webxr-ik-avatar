@@ -402,7 +402,7 @@ export class BasicSceneCCD
                         // Disable rendering in the XR if its a head mesh. This
                         // is to prevent rendering from the headset POV. (It will
                         // still render in the mirrors).
-                        if (!mesh.name.endsWith("arms"))
+                        if (mesh.name.endsWith("upper"))
                         {
                             mesh.layerMask = 0x00000000;
                         }

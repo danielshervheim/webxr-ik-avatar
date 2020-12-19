@@ -83,6 +83,7 @@ export class AvatarTransforms
 
     calibrateFromEyeHeight(eyeHeight: number): void
     {
+        eyeHeight *= 0.95; //
         console.log("AvatarTransforms.calibrateFromEyeHeight(). eyeHeight = " + eyeHeight);
 
         this.measurements.deriveFromEyeHeight(eyeHeight);

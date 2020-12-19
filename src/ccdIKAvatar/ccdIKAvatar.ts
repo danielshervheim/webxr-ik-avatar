@@ -118,7 +118,7 @@ export class CCDIKAvatar
         this.avatarBones = avatarBones;
 
         // Hide initially, show after first successful calibration.
-        this.avatarRoot.setEnabled(false);
+        // this.avatarRoot.setEnabled(false);
     }
 
     unbindSkeletalMesh(): void
