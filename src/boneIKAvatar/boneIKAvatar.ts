@@ -434,8 +434,8 @@ export class BoneIKAvatar
         leftIKControl.maxAngle  = Math.PI * 0.9;
         rightIKControl.maxAngle = Math.PI * 0.9;
 
-        const bone1AxesViewer = new BoneAxesViewer(this.scene, leftArmBone, <Mesh>leftArmMesh);
-        const bone2AxesViewer = new BoneAxesViewer(this.scene, rightArmBone, <Mesh>rightArmMesh);
+        // const bone1AxesViewer = new BoneAxesViewer(this.scene, leftArmBone, <Mesh>leftArmMesh);
+        // const bone2AxesViewer = new BoneAxesViewer(this.scene, rightArmBone, <Mesh>rightArmMesh);
 
         this.scene.registerBeforeRender(()=>
         {
@@ -482,8 +482,8 @@ export class BoneIKAvatar
             }
             leftIKControl.update();
             rightIKControl.update();
-            bone1AxesViewer.update();
-            bone2AxesViewer.update();
+            // bone1AxesViewer.update();
+            // bone2AxesViewer.update();
         });
     }
 
