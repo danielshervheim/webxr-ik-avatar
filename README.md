@@ -136,6 +136,7 @@ Each scene can be found from the following page:
 | - | - | - |
 | Model | Avatar and Calibration Models (Default Mixamo Avatar) | [Mixamo YBot](http://mixamo.com) |
 | Model | Studio Environment | [Marcin Lubecki](https://sketchfab.com/3d-models/apartment-interior-design-vr-ready-ce102c29aaf84a05a8607b2ac947728d) |
+| Code | We based our CCD implementation on Zalo's examples | [zalo.github.io](https://zalo.github.io/blog/inverse-kinematics/#ccdik) | 
 
 
 *Be aware that points will be deducted for using third party assets that are not properly documented.*
