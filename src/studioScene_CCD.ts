@@ -200,6 +200,7 @@ export class StudioSceneCCD
         this.ikAvatar = new CCDIKAvatar(this.scene, xrHelper);
 
         // Add cones to visualize.
+        /*
         let visualizationMeshes: SmartArray<AbstractMesh> = new SmartArray<AbstractMesh>(0);
         for (let avatarNode of this.ikAvatar.getNodes())
         {
@@ -227,6 +228,7 @@ export class StudioSceneCCD
         rootForwardIndicator.position = new Vector3(0, -0.2, 0.2);
         rootForwardIndicator.rotation = new Vector3(Math.PI/2.0, 0, 0);
         visualizationMeshes.push(rootForwardIndicator);
+        */
 
         // Creates a default environment.
         const environment = this.scene.createDefaultEnvironment({
@@ -278,10 +280,13 @@ export class StudioSceneCCD
         this.mirrors.forEach((mirror: Mirror)=>
         {
             mirror.render(environment!.skybox!);
+
+            /*
             visualizationMeshes.forEach((mesh: AbstractMesh) =>
             {
                 mirror.render(mesh);
             });
+            */
         });
 
         const assetsManager = new AssetsManager(this.scene);
@@ -471,7 +476,7 @@ export class StudioSceneCCD
                         // Disable rendering in the XR if its a head mesh. This
                         // is to prevent rendering from the headset POV. (It will
                         // still render in the mirrors).
-                        if (mesh.name.endsWith("upper"))
+                        if (!mesh.name.endsWith("arms"))
                         {
                             mesh.layerMask = 0x00000000;
                         }
@@ -489,6 +494,7 @@ export class StudioSceneCCD
                     // Position, rotate, and scale the root.
                     playerAvatarRoot.scaling.scaleInPlace(1.0 / Utilities.GetBoundingHeight(playerAvatarRoot) * 1.68);
 
+                    /*
                     // Disable the visualization mesh after the first calibration.
                     this.ikAvatar?.onCalibrationStateChange.add((state: CalibrationState) =>
                     {
@@ -500,6 +506,7 @@ export class StudioSceneCCD
                             });
                         }
                     });
+                    */
 
                     // Bind it to the IKAvatar controller.
                     this.ikAvatar?.bindSkeletalMesh(playerAvatarRoot, task.loadedSkeletons[0], bones);

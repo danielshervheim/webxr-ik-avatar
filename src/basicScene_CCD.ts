@@ -146,6 +146,7 @@ export class BasicSceneCCD
         this.ikAvatar = new CCDIKAvatar(this.scene, xrHelper);
 
         // Add cones to visualize.
+        /*
         let visualizationMeshes: SmartArray<AbstractMesh> = new SmartArray<AbstractMesh>(0);
         for (let avatarNode of this.ikAvatar.getNodes())
         {
@@ -173,6 +174,7 @@ export class BasicSceneCCD
         rootForwardIndicator.position = new Vector3(0, -0.2, 0.2);
         rootForwardIndicator.rotation = new Vector3(Math.PI/2.0, 0, 0);
         visualizationMeshes.push(rootForwardIndicator);
+        */
 
         // Creates a default skybox
         const environment = this.scene.createDefaultEnvironment({
@@ -267,10 +269,12 @@ export class BasicSceneCCD
             mirror.render(environment!.skybox!);
             mirror.render(environment!.ground!);
 
+            /*
             visualizationMeshes.forEach((mesh: AbstractMesh) =>
             {
                 mirror.render(mesh);
             });
+            */
         });
 
         ground.setParent(this.worldTransform);
@@ -472,7 +476,7 @@ export class BasicSceneCCD
                         // Disable rendering in the XR if its a head mesh. This
                         // is to prevent rendering from the headset POV. (It will
                         // still render in the mirrors).
-                        if (mesh.name.endsWith("upper"))
+                        if (!mesh.name.endsWith("arms"))
                         {
                             mesh.layerMask = 0x00000000;
                         }
@@ -488,6 +492,7 @@ export class BasicSceneCCD
                     // Position, rotate, and scale the root.
                     playerAvatarRoot.scaling.scaleInPlace(1.0 / Utilities.GetBoundingHeight(playerAvatarRoot) * 1.68);
 
+                    /*
                     // Disable the visualization mesh after the first calibration.
                     this.ikAvatar?.onCalibrationStateChange.add((state: CalibrationState) =>
                     {
@@ -499,6 +504,7 @@ export class BasicSceneCCD
                             });
                         }
                     });
+                    */
 
                     // Bind it to the IKAvatar controller.
                     this.ikAvatar?.bindSkeletalMesh(playerAvatarRoot, task.loadedSkeletons[0], bones);
